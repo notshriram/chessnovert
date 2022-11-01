@@ -1,7 +1,10 @@
 using Chessnovert.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.Resource;
+using System.Security.Claims;
 
 namespace Chessnovert.Server.Controllers
 {
@@ -26,6 +29,8 @@ namespace Chessnovert.Server.Controllers
         [HttpGet]
         public IEnumerable<WeatherForecast> Get()
         {
+            var oid = User.GetObjectId();
+            _logger.LogInformation(oid);
             return Enumerable.Range(1, 5).Select(index => new WeatherForecast
             {
                 Date = DateTime.Now.AddDays(index),
