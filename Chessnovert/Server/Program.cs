@@ -2,14 +2,14 @@ using Chessnovert.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
-using MySql.EntityFrameworkCore.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
+var serverVersion = new MySqlServerVersion(new Version(8, 0, 29));
 
 // Add services to the container.
-builder.Services.AddEntityFrameworkMySQL().AddDbContext<ChessDbContext>(options =>
+builder.Services.AddDbContext<ChessDbContext>(options =>
 {
-    options.UseMySQL(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"), serverVersion);
 });
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
