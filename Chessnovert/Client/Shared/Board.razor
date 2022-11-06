@@ -4,13 +4,23 @@
 <div class="board">
     @for (int i = 0; i < 8; i++)
     {
+        int Row = 7-i;
         <div class="board-row">
             @for (int j = 0; j < 8; j++)
             {
-                Piece? piece = board[7-i,j];
-                <div class="cell">
+                int Col = j;
+                Piece? piece = board[Row,Col];
+                Coordinate position = new Coordinate { Row = Row, Col = Col };
+                
+                bool isValid = false;
+                if (activePiece != null){
+                    isValid = activePiece.IsLegal(position, board);
+                }
+                <div @onclick="()=>MoveToPosition(new Coordinate{Row=Row,Col=Col})" class="cell @(isValid?"valid":"")">
                     @if (piece != null){
-                        <div class="piece @piece.Name @piece.Color.ToString()"></div>
+                        <div @onclick="()=>{activePiece=piece;}"
+                            class="piece @piece.Name @piece.Color.ToString() @(piece == activePiece? "active" : "")">
+                        </div>
                     }
                 </div>
             }
@@ -20,6 +30,7 @@
 
 @code {
     Piece[,] board = new Piece[8,8];
+    Piece activePiece = null!;
     protected override void OnInitialized()
     {
 
@@ -57,6 +68,21 @@
                     Console.Write(board[i, j].Value);
             }
             Console.WriteLine();
+        }
+    }
+    protected void MoveToPosition(Coordinate position){
+        Console.WriteLine(position.Row.ToString() + position.Col.ToString());
+        if(activePiece!=null){
+            if (activePiece.IsLegal(position, board))
+            {
+                Console.WriteLine("legal");
+                board[activePiece.Position.Row, activePiece.Position.Col] = null!;
+                activePiece.Position = position;
+                board[position.Row, position.Col] = activePiece;
+                activePiece = null!;
+            }
+            else
+                Console.WriteLine("illegal");
         }
     }
 }

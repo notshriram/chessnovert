@@ -12,7 +12,7 @@ namespace Chessnovert.Client.Shared.Chess
 
         public override string Name => "Queen";
 
-        public override bool CheckLegal(Coordinate destination, Piece[][] Board)
+        public override bool CheckLegal(Coordinate destination, Piece[,] Board)
         {
             throw new NotImplementedException();
         }

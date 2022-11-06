@@ -16,16 +16,16 @@ namespace Chessnovert.Client.Shared.Chess
 
         public Coordinate Position { get; set; }
         // Dest Row + Dest Col => New Coordinate Struct?
-        public bool IsLegal(Coordinate destination, Piece[][] Board)
+        public bool IsLegal(Coordinate destination, Piece[,] Board)
         {
-            Piece piece = Board[destination.Row][destination.Col];
+            Piece piece = Board[destination.Row,destination.Col];
             if ((piece==null) || (this.Color!=piece.Color))
             {
                 return CheckLegal(destination, Board);
             }
             return false;
         }
-        public abstract bool CheckLegal(Coordinate destination, Piece[][] Board);
+        public abstract bool CheckLegal(Coordinate destination, Piece[,] Board);
         
     }
 }
