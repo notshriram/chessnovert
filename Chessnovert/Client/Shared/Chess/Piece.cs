@@ -4,27 +4,28 @@ namespace Chessnovert.Client.Shared.Chess
 {
     abstract class Piece
     {
-        public Piece(Color color)
+        public Piece(Color color, Coordinate position)
         {
             Color = color;
+            Position = position;
         }
         public abstract char Value { get; }
+
+        public abstract string Name { get; }
         public Color Color { get; }
 
-        public abstract int Row { get; set; }
-        public abstract int Col { get; set; }
-
+        public Coordinate Position { get; set; }
         // Dest Row + Dest Col => New Coordinate Struct?
-        public bool IsLegal(int destinationRow, int destinationCol, Piece[][] Board)
+        public bool IsLegal(Coordinate destination, Piece[][] Board)
         {
-            Piece piece = Board[destinationRow][destinationCol];
+            Piece piece = Board[destination.Row][destination.Col];
             if ((piece==null) || (this.Color!=piece.Color))
             {
-                return CheckLegal(destinationRow, destinationCol, Board);
+                return CheckLegal(destination, Board);
             }
             return false;
         }
-        public abstract bool CheckLegal(int destinationRow, int destinationCol, Piece[][] Board);
+        public abstract bool CheckLegal(Coordinate destination, Piece[][] Board);
         
     }
 }

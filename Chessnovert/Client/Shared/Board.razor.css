@@ -1,10 +1,11 @@
 ﻿.cell{
-    aspect-ratio: 1;
+    width:100%;
+    aspect-ratio:1;
 }
-.row {
+.board-row {
     display: grid;
     grid-template-columns: repeat(8,1fr);
-    aspect-ratio: 8/1;
+    height:10vh;
 }
 .board {
     /*background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);*/
@@ -14,19 +15,76 @@
     height: 80vh;
 }
 
-.row:nth-child(2n) .cell:nth-child(2n){
+.board-row:nth-child(2n) .cell:nth-child(2n){
     background: #ccc;
 }
-.row:nth-child(2n) .cell:nth-child(2n+1) {
+.board-row:nth-child(2n) .cell:nth-child(2n+1) {
     background: #3a0647F0;
     /*background: transparent;*/
 }
-.row:nth-child(2n+1) .cell:nth-child(2n) {
+.board-row:nth-child(2n+1) .cell:nth-child(2n) {
     background: #3a0647F0;
     /*background: transparent;*/
 }
 
-.row:nth-child(2n+1) .cell:nth-child(2n+1){
+.board-row:nth-child(2n+1) .cell:nth-child(2n+1){
     background: #ccc;
 }
 
+.piece {
+    width: 100%;
+    aspect-ratio: 1;
+    background-size: cover;
+    background-position: center;
+}
+
+.piece.Pawn.Black{
+    background-image: url('css/assets/kosal/black_pawn.svg');
+}
+
+.piece.Pawn.White{
+    background-image: url('css/assets/kosal/white_pawn.svg');
+
+}
+.piece.Rook.Black{
+    background-image: url('css/assets/kosal/black_rook.svg');
+}
+
+.piece.Rook.White{
+    background-image: url('css/assets/kosal/white_rook.svg');
+
+}
+
+.piece.Knight.Black{
+    background-image: url('css/assets/kosal/black_knight.svg');
+}
+
+.piece.Knight.White{
+    background-image: url('css/assets/kosal/white_knight.svg');
+
+}
+
+.piece.Bishop.Black{
+    background-image: url('css/assets/kosal/black_bishop.svg');
+}
+
+.piece.Bishop.White{
+    background-image: url('css/assets/kosal/white_bishop.svg');
+
+}
+.piece.King.Black{
+    background-image: url('css/assets/kosal/black_king.svg');
+}
+
+.piece.King.White{
+    background-image: url('css/assets/kosal/white_king.svg');
+
+}
+.piece.Queen.Black{
+    background-image: url('css/assets/kosal/black_queen.svg');
+}
+
+.piece.Queen.White{
+    background-image: url('css/assets/kosal/white_queen.svg');
+
+}

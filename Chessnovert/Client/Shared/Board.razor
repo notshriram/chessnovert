@@ -1,15 +1,62 @@
-﻿<div class="board">
+﻿@using Chessnovert.Client.Shared.Chess
+
+
+<div class="board">
     @for (int i = 0; i < 8; i++)
     {
-        <div class="row">
+        <div class="board-row">
             @for (int j = 0; j < 8; j++)
             {
-                <div class="cell"></div>
+                Piece? piece = board[7-i,j];
+                <div class="cell">
+                    @if (piece != null){
+                        <div class="piece @piece.Name @piece.Color.ToString()"></div>
+                    }
+                </div>
             }
         </div>
     }
 </div>
 
 @code {
+    Piece[,] board = new Piece[8,8];
+    protected override void OnInitialized()
+    {
 
+        for (int j = 0; j < 8; j++)
+        {
+            board[1,j] = new Pawn(Chess.Enums.Color.White, new Coordinate { Row = 1, Col = j });
+            board[6,j] = new Pawn(Chess.Enums.Color.Black, new Coordinate { Row = 6, Col = j });
+        }
+        //White Pieces
+        board[0, 0] = new Rook  (Chess.Enums.Color.White, new Coordinate { Row = 0, Col = 0 });
+        board[0, 1] = new Knight(Chess.Enums.Color.White, new Coordinate { Row = 0, Col = 1 });
+        board[0, 2] = new Bishop(Chess.Enums.Color.White, new Coordinate { Row = 0, Col = 2 });
+        board[0, 3] = new King  (Chess.Enums.Color.White, new Coordinate { Row = 0, Col = 3 });
+        board[0, 4] = new Queen (Chess.Enums.Color.White, new Coordinate { Row = 0, Col = 4 });
+        board[0, 5] = new Bishop(Chess.Enums.Color.White, new Coordinate { Row = 0, Col = 5 });
+        board[0, 6] = new Knight(Chess.Enums.Color.White, new Coordinate { Row = 0, Col = 6 });
+        board[0, 7] = new Rook  (Chess.Enums.Color.White, new Coordinate { Row = 0, Col = 7 });
+
+        //Black Pieces
+        board[7, 0] = new Rook  (Chess.Enums.Color.Black, new Coordinate { Row = 7, Col = 0 });
+        board[7, 1] = new Knight(Chess.Enums.Color.Black, new Coordinate { Row = 7, Col = 1 });
+        board[7, 2] = new Bishop(Chess.Enums.Color.Black, new Coordinate { Row = 7, Col = 2 });
+        board[7, 3] = new King  (Chess.Enums.Color.Black, new Coordinate { Row = 7, Col = 3 });
+        board[7, 4] = new Queen (Chess.Enums.Color.Black, new Coordinate { Row = 7, Col = 4 });
+        board[7, 5] = new Bishop(Chess.Enums.Color.Black, new Coordinate { Row = 7, Col = 5 });
+        board[7, 6] = new Knight(Chess.Enums.Color.Black, new Coordinate { Row = 7, Col = 6 });
+        board[7, 7] = new Rook  (Chess.Enums.Color.Black, new Coordinate { Row = 7, Col = 7 });
+
+        base.OnInitialized();
+        for (int i = 0; i < 8; i++)
+        {
+            for (int j = 0; j < 8; j++)
+            {
+                if(board[i,j]!=null)
+                    Console.Write(board[i, j].Value);
+            }
+            Console.WriteLine();
+        }
+    }
 }
