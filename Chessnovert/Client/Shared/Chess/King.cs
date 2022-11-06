@@ -1,4 +1,4 @@
-﻿using Chessnovert.Client.Shared.Chess.Enums;
+﻿using Chessnovert.Client.Shared. Chess.Enums;
 
 namespace Chessnovert.Client.Shared.Chess
 {
@@ -14,7 +14,18 @@ namespace Chessnovert.Client.Shared.Chess
 
         public override bool CheckLegal(Coordinate destination, Piece[,] Board)
         {
-            throw new NotImplementedException();
+            // Difference between Rows <= 1
+            // And
+            // Difference between Cols <= 1
+
+            int rowDifference = Math.Abs(destination.Row - Position.Row);
+            int colDifference = Math.Abs(destination.Col - Position.Col);
+            if((rowDifference <= 1) && (colDifference <= 1))
+            {
+                return true;
+            }
+            //TODO: Add Castling
+            return false;
         }
     }
 }

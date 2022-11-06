@@ -30,7 +30,8 @@ namespace Chessnovert.Client.Shared.Chess
                         if((destination.Row == Position.Row - 2) && (Position.Row == 6))return true;
                     }
                 }
-                //TODO: en passant
+                // TODO: en passant.
+                // else -> { en passant logic }
             }
             else
             {
