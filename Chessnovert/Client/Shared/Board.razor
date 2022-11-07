@@ -8,7 +8,7 @@
         <div class="board-row">
             @for (int j = 0; j < 8; j++)
             {
-                int Col = j;
+                int Col = 7-j;
                 Piece? piece = board[Row,Col];
                 Coordinate position = new Coordinate { Row = Row, Col = Col };
                 

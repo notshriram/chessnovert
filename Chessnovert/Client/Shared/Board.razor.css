@@ -48,8 +48,8 @@
 }
 
 .valid {
-    background-color: teal !important;
-    border-bottom: 3px groove cadetblue;
+    background-color: lightseagreen !important;
+    box-shadow: inset 0 0 10px 1px teal;
     transition: all 0.3s linear;
 }
 
