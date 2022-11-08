@@ -2,6 +2,37 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.WebAssembly.Authentication
 @using Chessnovert.Shared
+@using Microsoft.AspNetCore.SignalR.Client
 @*@attribute [Authorize]*@
 
-<Board/>
+@if(isInGame){
+    <Board />
+}
+else {
+    <button @onclick="CreateGame">Create Game</button>
+    <ul>
+        @foreach(string gameid in openGames){
+            <li>@gameid</li>
+        }
+    </ul>
+}
+@code {
+    HubConnection hubConnection = new HubConnectionBuilder().WithUrl("https://localhost:44385/connect").Build();
+    bool isInGame = false;
+    List<string> openGames = new();
+
+    protected override async Task OnInitializedAsync(){
+        await RefreshGamesList();
+    }
+
+    async Task CreateGame(){
+        await hubConnection.StartAsync();
+        Guid gameId = Guid.NewGuid();
+        await hubConnection.SendAsync("JoinGame", gameId.ToString());
+        isInGame = true;
+    }
+    async Task RefreshGamesList(){
+        HttpClient httpClient = new();
+        openGames = await httpClient.GetFromJsonAsync<List<string>>("https://localhost:44385/api/Games/OpenChallenges");
+    }
+}

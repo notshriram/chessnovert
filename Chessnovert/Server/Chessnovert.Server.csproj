@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Chessnovert.Services\Chessnovert.Services.csproj" />
     <ProjectReference Include="..\Client\Chessnovert.Client.csproj" />
     <ProjectReference Include="..\Shared\Chessnovert.Shared.csproj" />
   </ItemGroup>
