@@ -3,26 +3,41 @@
 @using Microsoft.AspNetCore.Components.WebAssembly.Authentication
 @using Chessnovert.Shared
 @using Microsoft.AspNetCore.SignalR.Client
-@*@attribute [Authorize]*@
+@*@attribute [Authorize]
+@inject HttpClient Http*@
 
 @if(isInGame){
     <Board />
 }
 else {
-    <button @onclick="CreateGame">Create Game</button>
+    <button class="btn btn-outline-primary" @onclick="CreateGame">Create Game</button>
     <ul>
-        @foreach(string gameid in openGames){
-            <li>@gameid</li>
+        @if(openGames!=null){
+            @foreach (string gameid in openGames)
+            {
+                <li>@gameid</li>
+            }
         }
+
     </ul>
 }
 @code {
     HubConnection hubConnection = new HubConnectionBuilder().WithUrl("https://localhost:44385/connect").Build();
     bool isInGame = false;
-    List<string> openGames = new();
+    List<string>? openGames;
 
     protected override async Task OnInitializedAsync(){
-        await RefreshGamesList();
+        try
+        {
+            //TO BE REPLACED WITH: injected http;
+            HttpClient httpClient = new();
+            openGames = await httpClient.GetFromJsonAsync<List<string>>("https://localhost:44385/api/Games/OpenChallenges");
+        }
+        catch (Exception exception)
+        {
+            //exception.Redirect();
+            Console.WriteLine(exception);
+        }
     }
 
     async Task CreateGame(){
@@ -30,9 +45,5 @@ else {
         Guid gameId = Guid.NewGuid();
         await hubConnection.SendAsync("JoinGame", gameId.ToString());
         isInGame = true;
-    }
-    async Task RefreshGamesList(){
-        HttpClient httpClient = new();
-        openGames = await httpClient.GetFromJsonAsync<List<string>>("https://localhost:44385/api/Games/OpenChallenges");
     }
 }

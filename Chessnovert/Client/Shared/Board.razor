@@ -16,7 +16,7 @@
                 if (activePiece != null){
                     isValid = activePiece.IsLegal(position, board);
                 }
-                <div @onclick="()=>MoveToPosition(new Coordinate{Row=Row,Col=Col})" class="cell @(isValid?"valid":"")">
+                <div @onclick="()=>MoveToPosition(position)" class="cell @(isValid?"valid":"")">
                     @if (piece != null){
                         <div @onclick="()=>{activePiece=piece;}"
                             class="piece @piece.Name @piece.Color.ToString() @(piece == activePiece? "active" : "")">
