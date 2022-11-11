@@ -1,4 +1,5 @@
-﻿using Chessnovert.Services;
+﻿using Chessnovert.Client.Shared.Chess;
+using Chessnovert.Services;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Chessnovert.Server.Hubs
@@ -29,6 +30,11 @@ namespace Chessnovert.Server.Hubs
                 // add game to dict
                 gameService.Games.Add(gameId.ToString(), 1);
             }
+        }
+
+        public async Task Move(Guid gameId, Coordinate source, Coordinate destination)
+        {
+            await Clients.GroupExcept(gameId.ToString(), Context.ConnectionId).SendAsync("Moved",source,destination);
         }
     }
 }

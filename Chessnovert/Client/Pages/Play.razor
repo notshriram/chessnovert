@@ -7,23 +7,24 @@
 @inject HttpClient Http*@
 
 @if(isInGame){
-    <Board />
+    <Board HubConnection="hubConnection" GameId="@gameId"/>
 }
 else {
     <button class="btn btn-outline-primary" @onclick="CreateGame">Create Game</button>
-    <ul>
+    <div>
         @if(openGames!=null){
             @foreach (string gameid in openGames)
             {
-                <li>@gameid</li>
+                <button @onclick="()=>JoinGame(gameid)">@gameid</button>
             }
         }
 
-    </ul>
+    </div>
 }
 @code {
     HubConnection hubConnection = new HubConnectionBuilder().WithUrl("https://localhost:44385/connect").Build();
     bool isInGame = false;
+    Guid gameId;
     List<string>? openGames;
 
     protected override async Task OnInitializedAsync(){
@@ -42,8 +43,15 @@ else {
 
     async Task CreateGame(){
         await hubConnection.StartAsync();
-        Guid gameId = Guid.NewGuid();
+        gameId = Guid.NewGuid();
         await hubConnection.SendAsync("JoinGame", gameId.ToString());
+        isInGame = true;
+    }
+
+    async Task JoinGame(string gameId){
+        await hubConnection.StartAsync();
+        this.gameId = Guid.Parse(gameId);
+        await hubConnection.SendAsync("JoinGame", gameId);
         isInGame = true;
     }
 }

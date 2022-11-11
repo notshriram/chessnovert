@@ -26,8 +26,8 @@
     <script src="_framework/blazor.webassembly.js"></script>
     <script>navigator.serviceWorker.register('service-worker.js');</script>
     <script>
-        function addToLocalStorage(key, value) { localStorage[key] = value; }
-        function getFromLocalStorage(key) { return localStorage[key]; }
+        window.addToLocalStorage=(key, value)=> { localStorage[key] = value; }
+        window.getFromLocalStorage=(key)=> { return localStorage[key]; }
     </script>
 </body>
 

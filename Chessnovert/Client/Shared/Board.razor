@@ -1,5 +1,5 @@
 ﻿@using Chessnovert.Client.Shared.Chess
-
+@using Microsoft.AspNetCore.SignalR.Client
 
 <div class="board">
     @for (int i = 0; i < 8; i++)
@@ -29,6 +29,15 @@
 </div>
 
 @code {
+
+    // SignalR
+    [Parameter]
+    public HubConnection? HubConnection { get; set; }
+
+    [Parameter]
+    public Guid GameId { get; set; }
+
+
     Piece[,] board = new Piece[8,8];
     Piece activePiece = null!;
     protected override void OnInitialized()
@@ -69,6 +78,15 @@
             }
             Console.WriteLine();
         }
+        if(HubConnection!=null)
+        {
+            HubConnection.On("GameJoined", () =>
+            {
+                Console.WriteLine("Another Player has Joined the Game");
+            });
+            HubConnection.On<Coordinate, Coordinate>("Moved",OnMoveEvent);
+        }
+
     }
     protected void MoveToPosition(Coordinate position){
         Console.WriteLine(position.Row.ToString() + position.Col.ToString());
@@ -76,6 +94,10 @@
             if (activePiece.IsLegal(position, board))
             {
                 Console.WriteLine("legal");
+                if (HubConnection != null) { 
+                    HubConnection.SendAsync("Move",GameId, activePiece.Position, position);
+                    Console.WriteLine("SendAsync Move");
+                }
                 board[activePiece.Position.Row, activePiece.Position.Col] = null!;
                 activePiece.Position = position;
                 board[position.Row, position.Col] = activePiece;
@@ -84,5 +106,23 @@
             else
                 Console.WriteLine("illegal");
         }
+    }
+    void OnMoveEvent(Coordinate source, Coordinate destination)
+    {
+        Console.WriteLine("Move from " + source.Row + source.Col + " to " + destination.Row + destination.Col);
+        var sourcePiece = board[source.Row, source.Col];
+        if(sourcePiece!=null)
+        {
+            activePiece = sourcePiece;
+            if (activePiece.IsLegal(destination, board))
+            {
+                Console.WriteLine("legal");
+                board[activePiece.Position.Row, activePiece.Position.Col] = null!;
+                activePiece.Position = destination;
+                board[destination.Row, destination.Col] = activePiece;
+                activePiece = null!;
+            }
+        }
+        StateHasChanged();
     }
 }
