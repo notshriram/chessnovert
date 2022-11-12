@@ -1,6 +1,7 @@
 ﻿using Chessnovert.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Identity.Web.Resource;
+using Microsoft.IdentityModel.Tokens;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -22,23 +23,32 @@ namespace Chessnovert.Server.Controllers
         {
             return gameService.Games.Where(n => n.Value < 2).Select(n => n.Key);
         }
-        //GET: api/<GamesController>
-        [HttpGet]
-        public IEnumerable<string> Get()
-        {
-            return new string[] { "value1", "value2" };
-        }
-        // GET api/<GamesController>/5
+
+        // GET: api/{id}
         [HttpGet("{id}")]
-        public string Get(int id)
+        public IActionResult GetGame(string id)
         {
-            return "value";
+            int players = 0;
+            bool exists = gameService.Games.TryGetValue(id,out players);
+            if(exists) return Ok(players);
+            else return NotFound();
         }
 
         // POST api/<GamesController>
         [HttpPost]
-        public void Post([FromBody] string value)
+        public IActionResult Post([FromBody] Guid gameId)
         {
+            var existingGameId = gameService.Games.Where(g => g.Key == gameId.ToString()).Select(g => g.Key);
+            if(existingGameId.IsNullOrEmpty())
+            {
+                gameService.Games.Add(gameId.ToString(), 0);
+            }
+            else
+            {
+                return Conflict();
+            }
+            return CreatedAtAction(nameof(GetGame), new { id = gameId }, new {id=gameId} );
+
         }
 
         // PUT api/<GamesController>/5

@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Chessnovert.Client", "Chess
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Chessnovert.Shared", "Chessnovert\Shared\Chessnovert.Shared.csproj", "{6A59714D-4523-4C49-BC7A-3DC68E5F19F6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chessnovert.Services", "Chessnovert.Services\Chessnovert.Services.csproj", "{EE1AB3D8-820B-43E9-9778-5369C6C3295C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Chessnovert.Services", "Chessnovert.Services\Chessnovert.Services.csproj", "{EE1AB3D8-820B-43E9-9778-5369C6C3295C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

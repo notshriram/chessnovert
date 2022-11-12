@@ -1,0 +1,47 @@
+﻿@page "/game/{GameId:guid}"
+@using Chessnovert.Shared
+@using Microsoft.AspNetCore.SignalR.Client
+
+@if(found!=null)
+{
+
+    if(found==true)
+    {
+        <Board HubConnection="hubConnection" GameId="@GameId" />
+    }
+    else
+    {
+        <p role="alert">Sorry, there's nothing at this address.</p>
+    }
+}
+else 
+{
+    <p>Loading</p>
+}
+
+@code {
+
+    [Parameter]
+    public Guid GameId { get; set; }
+    HubConnection hubConnection = new HubConnectionBuilder().WithUrl("https://localhost:44385/connect").Build();
+    HttpClient httpClient = new();
+    bool? found;
+
+    protected override async Task OnInitializedAsync(){
+        var response = await httpClient.GetAsync($"https://localhost:44385/api/Games/{GameId}");
+        if(response.IsSuccessStatusCode)
+        {
+            found = true;
+            await JoinGame();
+        }
+        else
+        {
+            found = false;
+        }
+    }
+    async Task JoinGame()
+    {
+        await hubConnection.StartAsync();
+        await hubConnection.SendAsync("JoinGame",GameId);
+    }
+}

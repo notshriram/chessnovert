@@ -5,33 +5,27 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @*@attribute [Authorize]
 @inject HttpClient Http*@
+@inject NavigationManager NavManager
 
-@if(isInGame){
-    <Board HubConnection="hubConnection" GameId="@gameId"/>
-}
-else {
-    <button class="btn btn-outline-primary" @onclick="CreateGame">Create Game</button>
-    <div>
-        @if(openGames!=null){
-            @foreach (string gameid in openGames)
-            {
-                <button @onclick="()=>JoinGame(gameid)">@gameid</button>
-            }
+<button class="btn btn-outline-primary" @onclick="CreateGame">Create Game</button>
+<div>
+    @if (openGames != null)
+    {
+        @foreach (string gameid in openGames)
+        {
+            <a href="/game/@gameid">click to take to game page</a>
         }
-
-    </div>
-}
+    }
+</div>
 @code {
-    HubConnection hubConnection = new HubConnectionBuilder().WithUrl("https://localhost:44385/connect").Build();
-    bool isInGame = false;
     Guid gameId;
     List<string>? openGames;
+    HttpClient httpClient = new();
 
     protected override async Task OnInitializedAsync(){
         try
         {
             //TO BE REPLACED WITH: injected http;
-            HttpClient httpClient = new();
             openGames = await httpClient.GetFromJsonAsync<List<string>>("https://localhost:44385/api/Games/OpenChallenges");
         }
         catch (Exception exception)
@@ -42,16 +36,11 @@ else {
     }
 
     async Task CreateGame(){
-        await hubConnection.StartAsync();
         gameId = Guid.NewGuid();
-        await hubConnection.SendAsync("JoinGame", gameId.ToString());
-        isInGame = true;
-    }
-
-    async Task JoinGame(string gameId){
-        await hubConnection.StartAsync();
-        this.gameId = Guid.Parse(gameId);
-        await hubConnection.SendAsync("JoinGame", gameId);
-        isInGame = true;
+        var response = await httpClient.PostAsJsonAsync<Guid>("https://localhost:44385/api/Games", gameId);
+        if(response.IsSuccessStatusCode)
+        {
+            NavManager.NavigateTo($"/game/{gameId}");
+        }
     }
 }

@@ -24,12 +24,6 @@ namespace Chessnovert.Server.Hubs
                     gameService.Games[gameId.ToString()]++;
                 }
             }
-            else
-            {
-                await Groups.AddToGroupAsync(Context.ConnectionId, gameId.ToString());
-                // add game to dict
-                gameService.Games.Add(gameId.ToString(), 1);
-            }
         }
 
         public async Task Move(Guid gameId, Coordinate source, Coordinate destination)
