@@ -1,8 +1,8 @@
-﻿using Chessnovert.Client.Shared.Chess.Enums;
+﻿using Chessnovert.Shared.Chess.Enums;
 
-namespace Chessnovert.Client.Shared.Chess
+namespace Chessnovert.Shared.Chess
 {
-    abstract class Piece
+    public abstract class Piece
     {
         public Piece(Color color, Coordinate position)
         {

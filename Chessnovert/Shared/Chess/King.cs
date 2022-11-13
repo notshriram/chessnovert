@@ -1,8 +1,8 @@
-﻿using Chessnovert.Client.Shared. Chess.Enums;
+﻿using Chessnovert.Shared.Chess.Enums;
 
-namespace Chessnovert.Client.Shared.Chess
+namespace Chessnovert.Shared.Chess
 {
-    class King : Piece
+    public class King : Piece
     {
         public King(Color color, Coordinate position) : base(color, position)
         {

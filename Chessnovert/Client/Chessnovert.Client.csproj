@@ -8,13 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Shared\Chess\Assets\**" />
-    <Content Remove="Shared\Chess\Assets\**" />
-    <EmbeddedResource Remove="Shared\Chess\Assets\**" />
-    <None Remove="Shared\Chess\Assets\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Remove="wwwroot\css\assets\kosal\black_bishop.svg" />
     <Content Remove="wwwroot\css\assets\kosal\black_king.svg" />
     <Content Remove="wwwroot\css\assets\kosal\black_knight.svg" />

@@ -1,4 +1,4 @@
-﻿namespace Chessnovert.Client.Shared.Chess
+﻿namespace Chessnovert.Shared.Chess
 {
     public class Coordinate
     {

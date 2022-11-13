@@ -1,4 +1,4 @@
-﻿using Chessnovert.Client.Shared.Chess;
+﻿using Chessnovert.Shared.Chess;
 using Chessnovert.Services;
 using Microsoft.AspNetCore.SignalR;
 

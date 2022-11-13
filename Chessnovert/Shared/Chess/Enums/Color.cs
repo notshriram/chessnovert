@@ -1,4 +1,4 @@
-﻿namespace Chessnovert.Client.Shared.Chess.Enums
+﻿namespace Chessnovert.Shared.Chess.Enums
 {
     public enum Color
     {
