@@ -36,6 +36,10 @@ main {
         text-overflow: ellipsis;
     }
 
+    .top-row ::deep select {
+        margin-inline: 1.5rem;
+    }
+
 @media (max-width: 640.98px) {
     .top-row:not(.auth) {
         display: none;

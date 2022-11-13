@@ -19,7 +19,7 @@
                 }
                 <div @onclick="()=>MoveToPosition(position)" class="cell @(isValid?"valid":"")">
                     @if (piece != null){
-                        <div @onclick="()=>{activePiece=piece;}"
+                        <div @onclick="()=>{if(activePiece==null)activePiece=piece;}"
                             class="piece @piece.Name @piece.Color.ToString() @(piece == activePiece? "active" : "")">
                         </div>
                     }
@@ -104,8 +104,15 @@
                 board[position.Row, position.Col] = activePiece;
                 activePiece = null!;
             }
+            else if (position == activePiece.Position)
+            {
+                Console.WriteLine("Selected " + activePiece.Color + activePiece.Name);
+            }
             else
+            {
+                activePiece = null!;
                 Console.WriteLine("illegal");
+            }
         }
     }
     void OnMoveEvent(Coordinate source, Coordinate destination)
