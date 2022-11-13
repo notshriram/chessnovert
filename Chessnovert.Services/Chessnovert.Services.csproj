@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Chessnovert\Shared\Chessnovert.Shared.csproj" />
+  </ItemGroup>
+
 </Project>

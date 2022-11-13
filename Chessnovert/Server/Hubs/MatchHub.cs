@@ -14,15 +14,36 @@ namespace Chessnovert.Server.Hubs
         }
         public async Task JoinGame(Guid gameId)
         {
-            if (gameService.Games.ContainsKey(gameId.ToString()))
+            try
             {
-                if (gameService.Games[gameId.ToString()] < 2)
+                var game = gameService.Get(gameId);
+                // TODO: Replace with random selection
+                if (game.PlayerWhite == Guid.Empty && game.PlayerBlack == Guid.Empty)
                 {
-                    await Groups.AddToGroupAsync(Context.ConnectionId, gameId.ToString());
-                    await Clients.GroupExcept(gameId.ToString(), Context.ConnectionId).SendAsync("GameJoined");
-                    // Add player count to the game dict entry
-                    gameService.Games[gameId.ToString()]++;
+                    // choose randomly 
+                    var rnd = new Random(DateTime.Now.Millisecond);
+                    int choice = rnd.Next(0, 2);
+                    if(choice == 0)
+                        game.PlayerWhite = Guid.NewGuid();
+                    else
+                        game.PlayerBlack = Guid.NewGuid();
+
                 }
+                else if (game.PlayerWhite == Guid.Empty)
+                {
+                    game.PlayerWhite = Guid.NewGuid();
+                }
+                else if (game.PlayerBlack == Guid.Empty)
+                {
+                    game.PlayerBlack = Guid.NewGuid();
+                }
+                
+                await Groups.AddToGroupAsync(Context.ConnectionId, gameId.ToString());
+                await Clients.GroupExcept(gameId.ToString(), Context.ConnectionId).SendAsync("GameJoined");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
             }
         }
 

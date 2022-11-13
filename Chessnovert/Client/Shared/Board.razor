@@ -5,11 +5,11 @@
 <div class="board">
     @for (int i = 0; i < 8; i++)
     {
-        int Row = 7-i;
+        int Row = PlayerColor == Color.Black ? i : 7 - i;
         <div class="board-row">
             @for (int j = 0; j < 8; j++)
             {
-                int Col = 7-j;
+                int Col = PlayerColor == Color.Black ? j : 7 - j;
                 Piece? piece = board[Row,Col];
                 Coordinate position = new Coordinate { Row = Row, Col = Col };
                 
@@ -38,6 +38,8 @@
     [Parameter]
     public Guid GameId { get; set; }
 
+    [Parameter]
+    public Color? PlayerColor { get; set; }
 
     Piece[,] board = new Piece[8,8];
     Piece activePiece = null!;
@@ -148,7 +150,7 @@
 
     protected void SelectPiece(Piece piece)
     {
-        if(currentTurn != piece.Color)
+        if(currentTurn != piece.Color || PlayerColor != piece.Color)
         {
             return;
         }

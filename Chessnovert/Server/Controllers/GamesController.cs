@@ -1,4 +1,5 @@
 ﻿using Chessnovert.Services;
+using Chessnovert.Shared;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Identity.Web.Resource;
 using Microsoft.IdentityModel.Tokens;
@@ -17,37 +18,50 @@ namespace Chessnovert.Server.Controllers
         {
             this.gameService = gameService;
         }
-        //GET: api/OpenChallenges
-        [HttpGet("OpenChallenges")]
-        public IEnumerable<string> OpenChallenges()
+        //GET: api/Games
+        [HttpGet]
+        public ActionResult<IEnumerable<Game>> Get()
         {
-            return gameService.Games.Where(n => n.Value < 2).Select(n => n.Key);
-        }
-
-        // GET: api/{id}
-        [HttpGet("{id}")]
-        public IActionResult GetGame(string id)
-        {
-            int players = 0;
-            bool exists = gameService.Games.TryGetValue(id,out players);
-            if(exists) return Ok(players);
-            else return NotFound();
-        }
-
-        // POST api/<GamesController>
-        [HttpPost]
-        public IActionResult Post([FromBody] Guid gameId)
-        {
-            var existingGameId = gameService.Games.Where(g => g.Key == gameId.ToString()).Select(g => g.Key);
-            if(existingGameId.IsNullOrEmpty())
+            try
             {
-                gameService.Games.Add(gameId.ToString(), 0);
+                var games = gameService.GetAll();
+                return Ok(games);
             }
-            else
+            catch
+            {
+                return BadRequest();
+            }
+        }
+
+        // GET: api/Games/{id}
+        [HttpGet("{id:guid}")]
+        public IActionResult GetGame(Guid id)
+        {
+            try
+            {
+                var game = gameService.Get(id);
+                return Ok(game);
+            }
+            catch
+            {
+                return NotFound();
+            }
+        }
+
+        // POST api/Games
+        [HttpPost]
+        public IActionResult Post()
+        {
+            try
+            {
+                Game newGame = new Game { Id = Guid.NewGuid() };
+                gameService.Create(newGame);
+                return CreatedAtAction(nameof(GetGame), new { id = newGame.Id }, newGame);
+            }
+            catch
             {
                 return Conflict();
             }
-            return CreatedAtAction(nameof(GetGame), new { id = gameId }, new {id=gameId} );
 
         }
 

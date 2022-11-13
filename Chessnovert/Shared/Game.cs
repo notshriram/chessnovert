@@ -8,10 +8,10 @@ namespace Chessnovert.Shared
 {
     public class Game
     {
-        public Guid Guid { get; set; }
+        public Guid Id { get; set; }
         public Guid PlayerWhite { get; set; }
-
         public Guid PlayerBlack { get; set; }
+        public DateTime CreatedAt { get; } = DateTime.Now;
 
     }
 }

@@ -1,5 +1,6 @@
 ﻿@page "/game/{GameId:guid}"
 @using Chessnovert.Shared
+@using Chessnovert.Shared.Chess.Enums
 @using Microsoft.AspNetCore.SignalR.Client
 
 @if(found!=null)
@@ -7,7 +8,7 @@
 
     if(found==true)
     {
-        <Board HubConnection="hubConnection" GameId="@GameId" />
+        <Board HubConnection="hubConnection" GameId="@GameId" PlayerColor="@playerColor" />
     }
     else
     {
@@ -26,13 +27,28 @@ else
     HubConnection hubConnection = new HubConnectionBuilder().WithUrl("https://localhost:44385/connect").Build();
     HttpClient httpClient = new();
     bool? found;
+    public Chessnovert.Shared.Game? game;
+    Color? playerColor;
 
     protected override async Task OnInitializedAsync(){
-        var response = await httpClient.GetAsync($"https://localhost:44385/api/Games/{GameId}");
-        if(response.IsSuccessStatusCode)
+        game = await httpClient.GetFromJsonAsync<Chessnovert.Shared.Game>($"https://localhost:44385/api/Games/{GameId}");
+        if(game != null)
         {
-            found = true;
+            if(game.PlayerWhite==Guid.Empty)
+            {
+                playerColor = Color.White;
+            }
+            else if (game.PlayerBlack == Guid.Empty)
+            {
+                playerColor = Color.Black;
+            }
+            else 
+            {
+                playerColor = null;
+            }
+            Console.WriteLine(playerColor);
             await JoinGame();
+            found = true;
         }
         else
         {
