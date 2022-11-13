@@ -19,7 +19,7 @@
                 }
                 <div @onclick="()=>MoveToPosition(position)" class="cell @(isValid?"valid":"")">
                     @if (piece != null){
-                        <div @onclick="()=>{if(activePiece==null)activePiece=piece;}"
+                        <div @onclick="()=>SelectPiece(piece)"
                             class="piece @piece.Name @piece.Color.ToString() @(piece == activePiece? "active" : "")">
                         </div>
                     }
@@ -41,6 +41,8 @@
 
     Piece[,] board = new Piece[8,8];
     Piece activePiece = null!;
+    Color currentTurn;
+
     protected override void OnInitialized()
     {
 
@@ -69,7 +71,10 @@
         board[7, 6] = new Knight(Color.Black, new Coordinate { Row = 7, Col = 6 });
         board[7, 7] = new Rook  (Color.Black, new Coordinate { Row = 7, Col = 7 });
 
+        currentTurn = Color.White;
+
         base.OnInitialized();
+
         for (int i = 0; i < 8; i++)
         {
             for (int j = 0; j < 8; j++)
@@ -81,10 +86,13 @@
         }
         if(HubConnection!=null)
         {
+            // Event Listeners
+
             HubConnection.On("GameJoined", () =>
             {
                 Console.WriteLine("Another Player has Joined the Game");
             });
+
             HubConnection.On<Coordinate, Coordinate>("Moved",OnMoveEvent);
         }
 
@@ -103,6 +111,8 @@
                 activePiece.Position = position;
                 board[position.Row, position.Col] = activePiece;
                 activePiece = null!;
+                currentTurn = currentTurn == Color.White ? Color.Black : Color.White;
+                Console.WriteLine($"It's {currentTurn}'s turn");
             }
             else if (position == activePiece.Position)
             {
@@ -115,7 +125,7 @@
             }
         }
     }
-    void OnMoveEvent(Coordinate source, Coordinate destination)
+    protected void OnMoveEvent(Coordinate source, Coordinate destination)
     {
         Console.WriteLine("Move from " + source.Row + source.Col + " to " + destination.Row + destination.Col);
         var sourcePiece = board[source.Row, source.Col];
@@ -131,6 +141,17 @@
                 activePiece = null!;
             }
         }
+        currentTurn = currentTurn == Color.White ? Color.Black : Color.White;
+        Console.WriteLine($"It's {currentTurn}'s turn");
         StateHasChanged();
+    }
+
+    protected void SelectPiece(Piece piece)
+    {
+        if(currentTurn != piece.Color)
+        {
+            return;
+        }
+        activePiece = piece;
     }
 }
