@@ -8,7 +8,7 @@
 
     if(found==true)
     {
-        <Board HubConnection="hubConnection" GameId="@GameId" PlayerColor="@playerColor" />
+        <Board HubConnection="hubConnection" Game="@game" PlayerColor="@playerColor" />
     }
     else
     {
@@ -36,17 +36,23 @@ else
         {
             if(game.PlayerWhite==Guid.Empty)
             {
+                // Player White Joined
                 playerColor = Color.White;
             }
             else if (game.PlayerBlack == Guid.Empty)
             {
+                // Player Black Joined
                 playerColor = Color.Black;
             }
             else 
             {
+                // Spectator Joined
                 playerColor = null;
             }
             Console.WriteLine(playerColor);
+            foreach(var move in game.Moves){
+                Console.WriteLine("Previously.. " + move.Source + " " + move.Destination);
+            }
             await JoinGame();
             found = true;
         }

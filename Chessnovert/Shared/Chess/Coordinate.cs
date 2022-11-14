@@ -2,7 +2,7 @@
 
 namespace Chessnovert.Shared.Chess
 {
-    public struct Coordinate : IEquatable<Coordinate>
+    public class Coordinate : IEquatable<Coordinate>
     {
         public int Row { get; set; }
         public int Col { get; set; }
@@ -14,6 +14,10 @@ namespace Chessnovert.Shared.Chess
             this.Row = row;
             this.Col = col;
         }
+        public Coordinate()
+        {
+
+        }
 
         public bool Equals(Coordinate other) => this.Row == other.Row && this.Col == other.Col;
 
@@ -24,6 +28,13 @@ namespace Chessnovert.Shared.Chess
         public static bool operator ==(Coordinate left, Coordinate right) => left.Equals(right);
 
         public static bool operator !=(Coordinate left, Coordinate right) => !left.Equals(right);
+
+        public override string ToString()
+        {
+            string rowLabels = "ABCDEFGH";
+            string algebraicNotation = rowLabels[7 - this.Row] + Col.ToString();
+            return algebraicNotation;
+        }
 
     }
 }

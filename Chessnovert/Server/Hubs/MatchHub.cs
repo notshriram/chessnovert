@@ -49,7 +49,18 @@ namespace Chessnovert.Server.Hubs
 
         public async Task Move(Guid gameId, Coordinate source, Coordinate destination)
         {
-            await Clients.GroupExcept(gameId.ToString(), Context.ConnectionId).SendAsync("Moved",source,destination);
+            try
+            {
+                var game = gameService.Get(gameId);
+                game.Moves.Add(new Shared.Move(source, destination));
+                // TODO: source and destination parameters to be replaced with Move Struct
+                await Clients.GroupExcept(gameId.ToString(), Context.ConnectionId).SendAsync("Moved", source, destination);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            
         }
     }
 }

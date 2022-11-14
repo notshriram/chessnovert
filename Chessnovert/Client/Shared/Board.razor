@@ -1,4 +1,5 @@
-﻿@using Chessnovert.Shared.Chess
+﻿@using Chessnovert.Shared
+@using Chessnovert.Shared.Chess
 @using Chessnovert.Shared.Chess.Enums
 @using Microsoft.AspNetCore.SignalR.Client
 
@@ -36,7 +37,7 @@
     public HubConnection? HubConnection { get; set; }
 
     [Parameter]
-    public Guid GameId { get; set; }
+    public Chessnovert.Shared.Game Game { get; set; }
 
     [Parameter]
     public Color? PlayerColor { get; set; }
@@ -77,6 +78,20 @@
 
         base.OnInitialized();
 
+        // Play all the moves that have occured upto this point
+        List<Move> moves = Game.Moves;
+        if(moves.Count != 0)
+        {
+            foreach(var move in moves)
+            {
+                OnMoveEvent(move.Source,move.Destination);
+            }
+        }
+        else 
+        {
+            Console.WriteLine("Empty Move List");
+        }
+
         for (int i = 0; i < 8; i++)
         {
             for (int j = 0; j < 8; j++)
@@ -86,6 +101,7 @@
             }
             Console.WriteLine();
         }
+
         if(HubConnection!=null)
         {
             // Event Listeners
@@ -106,7 +122,7 @@
             {
                 Console.WriteLine("legal");
                 if (HubConnection != null) { 
-                    HubConnection.SendAsync("Move",GameId, activePiece.Position, position);
+                    HubConnection.SendAsync("Move",Game.Id, activePiece.Position, position);
                     Console.WriteLine("SendAsync Move");
                 }
                 board[activePiece.Position.Row, activePiece.Position.Col] = null!;
