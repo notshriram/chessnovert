@@ -36,8 +36,20 @@ main {
         text-overflow: ellipsis;
     }
 
-    .top-row ::deep select {
-        margin-inline: 1.5rem;
+    .theme-switcher {
+        color: var(--font-color);
+        margin-inline: 0.5rem;
+        cursor: pointer;
+        aspect-ratio: 1/1;
+        border: none;
+        width: fit-content;
+        border-radius: 50%;
+        background: none;
+    }
+    .theme-switcher:hover
+    {
+        opacity: 50%;
+        transition: all .2s linear;
     }
 
 @media (max-width: 640.98px) {

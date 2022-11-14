@@ -18,18 +18,22 @@ namespace Chessnovert.Server.Hubs
             {
                 var game = gameService.Get(gameId);
                 // TODO: Replace with random selection
-                if (game.PlayerWhite == Guid.Empty && game.PlayerBlack == Guid.Empty)
-                {
-                    // choose randomly 
-                    var rnd = new Random(DateTime.Now.Millisecond);
-                    int choice = rnd.Next(0, 2);
-                    if(choice == 0)
-                        game.PlayerWhite = Guid.NewGuid();
-                    else
-                        game.PlayerBlack = Guid.NewGuid();
+                /*
+                 if (game.PlayerWhite == Guid.Empty && game.PlayerBlack == Guid.Empty)
+                    {
+                        // choose randomly 
+                        var rnd = new Random(DateTime.Now.Millisecond);
+                        int choice = rnd.Next(0, 2);
+                        if(choice == 0)
+                            game.PlayerWhite = Guid.NewGuid();
+                        else
+                            game.PlayerBlack = Guid.NewGuid();
 
-                }
-                else if (game.PlayerWhite == Guid.Empty)
+                    }
+                else 
+                 * 
+                */
+                if (game.PlayerWhite == Guid.Empty)
                 {
                     game.PlayerWhite = Guid.NewGuid();
                 }

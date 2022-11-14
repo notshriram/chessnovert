@@ -27,7 +27,7 @@
         try
         {
             //TO BE REPLACED WITH: injected http;
-            Games = await httpClient.GetFromJsonAsync<List<Chessnovert.Shared.Game>>("https://localhost:44385/api/Games");
+            Games = await httpClient.GetFromJsonAsync<List<Chessnovert.Shared.Game>>("https://tl222.local:5001/api/Games");
         }
         catch (Exception exception)
         {
@@ -38,13 +38,20 @@
 
     async Task CreateGame(){
         // send current user Id
-        var response = await httpClient.PostAsync("https://localhost:44385/api/Games", null);
+        var response = await httpClient.PostAsync("https://tl222.local:5001/api/Games", null);
         if(response.IsSuccessStatusCode)
         {
-            //Chessnovert.Shared.Game createdGame = response.Content;
-            var content = response.Content;
-            Console.WriteLine(content.ToString());
-            //NavManager.NavigateTo($"/game/{gameId}");
+            Chessnovert.Shared.Game? createdGame = await response.Content.ReadFromJsonAsync<Chessnovert.Shared.Game>();
+
+            if (createdGame != null)
+            {
+                NavManager.NavigateTo($"/game/{createdGame.Id}");
+            }
+
+            else
+            {
+                Console.WriteLine("Failed to Create Game");
+            }
         }
     }
 }

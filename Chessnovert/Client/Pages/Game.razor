@@ -24,29 +24,29 @@ else
 
     [Parameter]
     public Guid GameId { get; set; }
-    HubConnection hubConnection = new HubConnectionBuilder().WithUrl("https://localhost:44385/connect").Build();
+    HubConnection hubConnection = new HubConnectionBuilder().WithUrl("https://tl222.local:5001/connect").Build();
     HttpClient httpClient = new();
     bool? found;
     public Chessnovert.Shared.Game? game;
     Color? playerColor;
 
     protected override async Task OnInitializedAsync(){
-        game = await httpClient.GetFromJsonAsync<Chessnovert.Shared.Game>($"https://localhost:44385/api/Games/{GameId}");
+        game = await httpClient.GetFromJsonAsync<Chessnovert.Shared.Game>($"https://tl222.local:5001/api/Games/{GameId}");
         if(game != null)
         {
-            if(game.PlayerWhite==Guid.Empty)
+            if(game.PlayerWhite == Guid.Empty)
             {
-                // Player White Joined
+                // Join as Player White
                 playerColor = Color.White;
             }
             else if (game.PlayerBlack == Guid.Empty)
             {
-                // Player Black Joined
+                // Join as Player Black
                 playerColor = Color.Black;
             }
             else 
             {
-                // Spectator Joined
+                // Join as Spectator
                 playerColor = null;
             }
             Console.WriteLine(playerColor);

@@ -8,10 +8,8 @@
 
     <main>
         <div class="top-row px-4 auth">
-            <select @onchange="changeTheme">
-                <option selected="@IsSelected("Light")" value="Light">Light</option>
-                <option selected="@IsSelected("Dark")" value="Dark">Dark</option>
-            </select>
+            <button class="theme-switcher oi @getIconClass()" @onclick="changeTheme">
+            </button>
             <LoginDisplay />
             <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
         </div>
@@ -48,16 +46,20 @@
             default: return String.Empty;
         }
     }
-    private async Task changeTheme(ChangeEventArgs e)
+
+    private string getIconClass()
     {
-        if(e.Value!=null)
+        switch (selectedTheme)
         {
-            var newTheme = e.Value.ToString();
-            if (!string.IsNullOrEmpty(newTheme))
-            {
-                selectedTheme = newTheme;
-                await js.InvokeVoidAsync("addToLocalStorage", "theme", selectedTheme);
-            }
+            case "Light": return "oi-moon";
+            case "Dark": return "oi-sun";
+            default: return String.Empty;
         }
+    }
+
+    private async Task changeTheme()
+    {
+        selectedTheme = IsSelected("Light") ? "Dark" : "Light";
+        await js.InvokeVoidAsync("addToLocalStorage", "theme", selectedTheme);
     }
 }

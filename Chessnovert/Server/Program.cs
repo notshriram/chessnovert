@@ -8,6 +8,8 @@ using Microsoft.Identity.Web;
 var builder = WebApplication.CreateBuilder(args);
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
+builder.WebHost.UseUrls("http://*:5000", "https://*:5001");
+
 // Add services to the container.
 builder.Services.AddSignalR();
 builder.Services.AddCors(options =>

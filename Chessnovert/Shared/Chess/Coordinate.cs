@@ -31,8 +31,8 @@ namespace Chessnovert.Shared.Chess
 
         public override string ToString()
         {
-            string rowLabels = "ABCDEFGH";
-            string algebraicNotation = rowLabels[7 - this.Row] + Col.ToString();
+            string columnLabels = "ABCDEFGH";
+            string algebraicNotation = columnLabels[Col] + Row.ToString();
             return algebraicNotation;
         }
 
