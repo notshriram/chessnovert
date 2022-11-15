@@ -47,6 +47,10 @@
     [Parameter]
     public EventCallback<int> OnMoveCompleted { get; set; }
 
+    // TODO: Take Template Param String Reason
+    [Parameter]
+    public EventCallback OnGameOver { get; set; }
+
     Piece[,] board = new Piece[8, 8];
     Piece activePiece = null!;
     Color currentTurn;
@@ -119,6 +123,11 @@
             HubConnection.On<Coordinate, Coordinate, int>("Moved", OnMoveEvent);
 
             HubConnection.On<int>("Synchronize", i => { OnMoveCompleted.InvokeAsync(i); });
+
+            HubConnection.On<Color>("TimedOut", (color) => { 
+                Console.WriteLine($"{color} has run out of time");
+                OnGameOver.InvokeAsync();
+            });
 
         }
 

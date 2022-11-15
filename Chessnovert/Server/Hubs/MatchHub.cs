@@ -1,9 +1,8 @@
-﻿using Chessnovert.Shared.Chess;
-using Chessnovert.Services;
-using Microsoft.AspNetCore.SignalR;
+﻿using Chessnovert.Services;
+using Chessnovert.Shared.Chess;
 using Chessnovert.Shared.Chess.Enums;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.VisualBasic;
 
 namespace Chessnovert.Server.Hubs
 {
@@ -44,7 +43,7 @@ namespace Chessnovert.Server.Hubs
                 {
                     game.PlayerBlack = Guid.NewGuid();
                 }
-                
+
                 await Groups.AddToGroupAsync(Context.ConnectionId, gameId.ToString());
                 await Clients.GroupExcept(gameId.ToString(), Context.ConnectionId).SendAsync("GameJoined");
             }
@@ -62,14 +61,14 @@ namespace Chessnovert.Server.Hubs
                 var move = new Shared.Move(source, destination, color);
                 // Aggregate the difference between move.At and prevMove.At
                 TimeSpan sum = game.Moves.IsNullOrEmpty() ? TimeSpan.Zero : move.At - game.Moves.Last().At;
-                for (int i = move.Color == Color.White ? 2 : 1; i < game.Moves.Count; i+=2)
+                for (int i = move.Color == Color.White ? 2 : 1; i < game.Moves.Count; i += 2)
                 {
                     sum += game.Moves[i].At - game.Moves[i - 1].At;
                 }
-                
+
                 if (sum > game.TimeControl)
                 {
-                    await Clients.GroupExcept(gameId.ToString(), Context.ConnectionId).SendAsync("TimedOut", color);
+                    await Clients.Group(gameId.ToString()).SendAsync("TimedOut", color);
                 }
                 else
                 {
@@ -79,13 +78,13 @@ namespace Chessnovert.Server.Hubs
                     await Clients.Client(Context.ConnectionId).SendAsync("Synchronize", remainingTime);
                     await Clients.GroupExcept(gameId.ToString(), Context.ConnectionId).SendAsync("Moved", source, destination, remainingTime);
                 }
-        
+
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
             }
-            
+
         }
     }
 }

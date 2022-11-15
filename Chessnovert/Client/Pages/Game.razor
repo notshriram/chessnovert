@@ -3,20 +3,21 @@
 @using Chessnovert.Shared.Chess.Enums
 @using Microsoft.AspNetCore.SignalR.Client
 
-@if(found!=null)
+@if (found != null)
 {
 
-    if(found==true)
+    if (found == true)
     {
         <div class="d-flex flex-row gap-2">
-            <Board HubConnection="hubConnection" 
+            <Board HubConnection="hubConnection"
                    Game="@game"
                    PlayerColor="@playerColor"
-                   OnMoveCompleted="SynchronizeClocks" />
+                   OnMoveCompleted="SynchronizeClocks"
+                   OnGameOver="StopClocksAsync" />
             <div class="d-flex flex-column justify-content-between align-items-center">
-                    @* replace with timer component*@
-                    <div>Black: @remainingSecondsBlack</div>
-                    <div>White: @remainingSecondsWhite</div>
+                @* replace with timer component*@
+                <div>Black: @remainingSecondsBlack</div>
+                <div>White: @remainingSecondsWhite</div>
             </div>
         </div>
     }
@@ -25,7 +26,7 @@
         <p role="alert">Sorry, there's nothing at this address.</p>
     }
 }
-else 
+else
 {
     <p>Loading</p>
 }
@@ -45,11 +46,12 @@ else
     private readonly PeriodicTimer _timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1000));
     private readonly CancellationTokenSource _cts = new();
 
-    protected override async Task OnInitializedAsync(){
+    protected override async Task OnInitializedAsync()
+    {
         game = await httpClient.GetFromJsonAsync<Chessnovert.Shared.Game>($"https://tl222.local:5001/api/Games/{GameId}");
-        if(game != null)
+        if (game != null)
         {
-            if(game.PlayerWhite == Guid.Empty)
+            if (game.PlayerWhite == Guid.Empty)
             {
                 // Join as Player White
                 playerColor = Color.White;
@@ -59,19 +61,19 @@ else
                 // Join as Player Black
                 playerColor = Color.Black;
             }
-            else 
+            else
             {
                 // Join as Spectator
                 playerColor = null;
             }
             Console.WriteLine(playerColor);
-            foreach(var move in game.Moves){
+            foreach (var move in game.Moves)
+            {
                 Console.WriteLine("Previously.. " + move.Source + " " + move.Destination);
             }
             await JoinGame();
             found = true;
             remainingSecondsBlack = remainingSecondsWhite = (int)game.TimeControl.TotalSeconds;
-            _clockTask = UpdateClocksAsync();
         }
         else
         {
@@ -81,16 +83,26 @@ else
     async Task JoinGame()
     {
         await hubConnection.StartAsync();
-        await hubConnection.SendAsync("JoinGame",GameId);
+        await hubConnection.SendAsync("JoinGame", GameId);
     }
+
+    protected void StartClocks()
+    {
+        _clockTask = UpdateClocksAsync();
+    }
+
     protected void SynchronizeClocks(int remainingTime)
     {
-        if(currentlyMoving == Color.White)
+        if (_clockTask == null)
+        {
+            StartClocks();
+        }
+        if (currentlyMoving == Color.White)
         {
             remainingSecondsWhite = remainingTime;
             currentlyMoving = Color.Black;
         }
-        else if(currentlyMoving == Color.Black)
+        else if (currentlyMoving == Color.Black)
         {
             remainingSecondsBlack = remainingTime;
             currentlyMoving = Color.White;
@@ -101,9 +113,9 @@ else
     {
         try
         {
-            while(await _timer.WaitForNextTickAsync(_cts.Token))
+            while (await _timer.WaitForNextTickAsync(_cts.Token))
             {
-                if(currentlyMoving == Color.White)
+                if (currentlyMoving == Color.White)
                 {
                     remainingSecondsWhite--;
                     StateHasChanged();
@@ -118,13 +130,13 @@ else
         }
         catch (OperationCanceledException e)
         {
-            Console.WriteLine(e.Message);
+            Console.WriteLine("UpdateClocksAsync Exception: " + e.Message);
         }
     }
 
-    public async Task StopAsync()
+    public async Task StopClocksAsync()
     {
-        if(_clockTask is null)
+        if (_clockTask is null)
         {
             return;
         }
