@@ -8,6 +8,7 @@
     --link: #0366d6;
     --sidebar-gradient-top: #3a0647;
     --sidebar-gradient-bottom: #3a0647;
+    --logo: url("css/assets/Chessnovert-Logo-Light.svg");
 }
 
 .dark-mode {
@@ -18,6 +19,7 @@
     --link: #3ca4ff;
     --sidebar-gradient-top: #000;
     --sidebar-gradient-bottom: #3a0647;
+    --logo: url("css/assets/Chessnovert-Logo-Dark.svg");
 }
 
 html, body {
