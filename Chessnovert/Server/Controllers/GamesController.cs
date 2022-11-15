@@ -50,11 +50,11 @@ namespace Chessnovert.Server.Controllers
 
         // POST api/Games
         [HttpPost]
-        public IActionResult Post()
+        public IActionResult Post([FromBody] TimeSpan timeControl)
         {
             try
             {
-                Game newGame = new Game { Id = Guid.NewGuid() };
+                Game newGame = new Game { Id = Guid.NewGuid(), TimeControl=timeControl };
                 gameService.Create(newGame);
                 return CreatedAtAction(nameof(GetGame), new { id = newGame.Id }, newGame);
             }

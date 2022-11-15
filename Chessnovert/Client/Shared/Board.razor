@@ -11,17 +11,19 @@
             @for (int j = 0; j < 8; j++)
             {
                 int Col = PlayerColor == Color.Black ? j : 7 - j;
-                Piece? piece = board[Row,Col];
+                Piece? piece = board[Row, Col];
                 Coordinate position = new Coordinate { Row = Row, Col = Col };
-                
+
                 bool isValid = false;
-                if (activePiece != null){
+                if (activePiece != null)
+                {
                     isValid = activePiece.IsLegal(position, board);
                 }
                 <div @onclick="()=>MoveToPosition(position)" class="cell @(isValid?"valid":"")">
-                    @if (piece != null){
+                    @if (piece != null)
+                    {
                         <div @onclick="()=>SelectPiece(piece)"
-                            class="piece @piece.Name @piece.Color.ToString() @(piece == activePiece? "active" : "")">
+                 class="piece @piece.Name @piece.Color.ToString() @(piece == activePiece? "active" : "")">
                         </div>
                     }
                 </div>
@@ -42,7 +44,10 @@
     [Parameter]
     public Color? PlayerColor { get; set; }
 
-    Piece[,] board = new Piece[8,8];
+    [Parameter]
+    public EventCallback<int> OnMoveCompleted { get; set; }
+
+    Piece[,] board = new Piece[8, 8];
     Piece activePiece = null!;
     Color currentTurn;
 
@@ -51,28 +56,28 @@
 
         for (int j = 0; j < 8; j++)
         {
-            board[1,j] = new Pawn(Color.White, new Coordinate { Row = 1, Col = j });
-            board[6,j] = new Pawn(Color.Black, new Coordinate { Row = 6, Col = j });
+            board[1, j] = new Pawn(Color.White, new Coordinate { Row = 1, Col = j });
+            board[6, j] = new Pawn(Color.Black, new Coordinate { Row = 6, Col = j });
         }
         //White Pieces
-        board[0, 0] = new Rook  (Color.White, new Coordinate { Row = 0, Col = 0 });
+        board[0, 0] = new Rook(Color.White, new Coordinate { Row = 0, Col = 0 });
         board[0, 1] = new Knight(Color.White, new Coordinate { Row = 0, Col = 1 });
         board[0, 2] = new Bishop(Color.White, new Coordinate { Row = 0, Col = 2 });
-        board[0, 3] = new King  (Color.White, new Coordinate { Row = 0, Col = 3 });
-        board[0, 4] = new Queen (Color.White, new Coordinate { Row = 0, Col = 4 });
+        board[0, 3] = new King(Color.White, new Coordinate { Row = 0, Col = 3 });
+        board[0, 4] = new Queen(Color.White, new Coordinate { Row = 0, Col = 4 });
         board[0, 5] = new Bishop(Color.White, new Coordinate { Row = 0, Col = 5 });
         board[0, 6] = new Knight(Color.White, new Coordinate { Row = 0, Col = 6 });
-        board[0, 7] = new Rook  (Color.White, new Coordinate { Row = 0, Col = 7 });
+        board[0, 7] = new Rook(Color.White, new Coordinate { Row = 0, Col = 7 });
 
         //Black Pieces
-        board[7, 0] = new Rook  (Color.Black, new Coordinate { Row = 7, Col = 0 });
+        board[7, 0] = new Rook(Color.Black, new Coordinate { Row = 7, Col = 0 });
         board[7, 1] = new Knight(Color.Black, new Coordinate { Row = 7, Col = 1 });
         board[7, 2] = new Bishop(Color.Black, new Coordinate { Row = 7, Col = 2 });
-        board[7, 3] = new King  (Color.Black, new Coordinate { Row = 7, Col = 3 });
-        board[7, 4] = new Queen (Color.Black, new Coordinate { Row = 7, Col = 4 });
+        board[7, 3] = new King(Color.Black, new Coordinate { Row = 7, Col = 3 });
+        board[7, 4] = new Queen(Color.Black, new Coordinate { Row = 7, Col = 4 });
         board[7, 5] = new Bishop(Color.Black, new Coordinate { Row = 7, Col = 5 });
         board[7, 6] = new Knight(Color.Black, new Coordinate { Row = 7, Col = 6 });
-        board[7, 7] = new Rook  (Color.Black, new Coordinate { Row = 7, Col = 7 });
+        board[7, 7] = new Rook(Color.Black, new Coordinate { Row = 7, Col = 7 });
 
         currentTurn = Color.White;
 
@@ -80,14 +85,14 @@
 
         // Play all the moves that have occured upto this point
         List<Move> moves = Game.Moves;
-        if(moves.Count != 0)
+        if (moves.Count != 0)
         {
-            foreach(var move in moves)
+            foreach (var move in moves)
             {
-                OnMoveEvent(move.Source,move.Destination);
+                OnMoveEvent(move.Source, move.Destination, (int)Game.TimeControl.TotalSeconds);
             }
         }
-        else 
+        else
         {
             Console.WriteLine("Empty Move List");
         }
@@ -96,13 +101,13 @@
         {
             for (int j = 0; j < 8; j++)
             {
-                if(board[i,j]!=null)
+                if (board[i, j] != null)
                     Console.Write(board[i, j].Value);
             }
             Console.WriteLine();
         }
 
-        if(HubConnection!=null)
+        if (HubConnection != null)
         {
             // Event Listeners
 
@@ -111,18 +116,24 @@
                 Console.WriteLine("Another Player has Joined the Game");
             });
 
-            HubConnection.On<Coordinate, Coordinate>("Moved",OnMoveEvent);
+            HubConnection.On<Coordinate, Coordinate, int>("Moved", OnMoveEvent);
+
+            HubConnection.On<int>("Synchronize", i => { OnMoveCompleted.InvokeAsync(i); });
+
         }
 
     }
-    protected void MoveToPosition(Coordinate position){
+    protected void MoveToPosition(Coordinate position)
+    {
         Console.WriteLine(position.Row.ToString() + position.Col.ToString());
-        if(activePiece!=null){
+        if (activePiece != null)
+        {
             if (activePiece.IsLegal(position, board))
             {
                 Console.WriteLine("legal");
-                if (HubConnection != null) { 
-                    HubConnection.SendAsync("Move",Game.Id, activePiece.Position, position);
+                if (HubConnection != null)
+                {
+                    HubConnection.SendAsync("Move", Game.Id, activePiece.Position, position, PlayerColor);
                     Console.WriteLine("SendAsync Move");
                 }
                 board[activePiece.Position.Row, activePiece.Position.Col] = null!;
@@ -143,11 +154,11 @@
             }
         }
     }
-    protected void OnMoveEvent(Coordinate source, Coordinate destination)
+    protected void OnMoveEvent(Coordinate source, Coordinate destination, int remainingTime)
     {
         Console.WriteLine("Move from " + source.Row + source.Col + " to " + destination.Row + destination.Col);
         var sourcePiece = board[source.Row, source.Col];
-        if(sourcePiece!=null)
+        if (sourcePiece != null)
         {
             activePiece = sourcePiece;
             if (activePiece.IsLegal(destination, board))
@@ -161,12 +172,13 @@
         }
         currentTurn = currentTurn == Color.White ? Color.Black : Color.White;
         Console.WriteLine($"It's {currentTurn}'s turn");
+        OnMoveCompleted.InvokeAsync(remainingTime);
         StateHasChanged();
     }
 
     protected void SelectPiece(Piece piece)
     {
-        if(currentTurn != piece.Color || PlayerColor != piece.Color)
+        if (currentTurn != piece.Color || PlayerColor != piece.Color)
         {
             return;
         }

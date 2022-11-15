@@ -1,6 +1,9 @@
 ﻿using Chessnovert.Shared.Chess;
 using Chessnovert.Services;
 using Microsoft.AspNetCore.SignalR;
+using Chessnovert.Shared.Chess.Enums;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.VisualBasic;
 
 namespace Chessnovert.Server.Hubs
 {
@@ -51,14 +54,32 @@ namespace Chessnovert.Server.Hubs
             }
         }
 
-        public async Task Move(Guid gameId, Coordinate source, Coordinate destination)
+        public async Task Move(Guid gameId, Coordinate source, Coordinate destination, Color color)
         {
             try
             {
                 var game = gameService.Get(gameId);
-                game.Moves.Add(new Shared.Move(source, destination));
-                // TODO: source and destination parameters to be replaced with Move Struct
-                await Clients.GroupExcept(gameId.ToString(), Context.ConnectionId).SendAsync("Moved", source, destination);
+                var move = new Shared.Move(source, destination, color);
+                // Aggregate the difference between move.At and prevMove.At
+                TimeSpan sum = game.Moves.IsNullOrEmpty() ? TimeSpan.Zero : move.At - game.Moves.Last().At;
+                for (int i = move.Color == Color.White ? 2 : 1; i < game.Moves.Count; i+=2)
+                {
+                    sum += game.Moves[i].At - game.Moves[i - 1].At;
+                }
+                
+                if (sum > game.TimeControl)
+                {
+                    await Clients.GroupExcept(gameId.ToString(), Context.ConnectionId).SendAsync("TimedOut", color);
+                }
+                else
+                {
+                    game.Moves.Add(move);
+                    // TODO: source and destination parameters to be replaced with Move Struct
+                    int remainingTime = (int)(game.TimeControl - sum).TotalSeconds;
+                    await Clients.Client(Context.ConnectionId).SendAsync("Synchronize", remainingTime);
+                    await Clients.GroupExcept(gameId.ToString(), Context.ConnectionId).SendAsync("Moved", source, destination, remainingTime);
+                }
+        
             }
             catch (Exception e)
             {

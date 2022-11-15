@@ -14,6 +14,7 @@ namespace Chessnovert.Shared
         public Guid PlayerWhite { get; set; }
         public Guid PlayerBlack { get; set; }
         public DateTime CreatedAt { get; } = DateTime.Now;
+        public TimeSpan TimeControl { get; set; }
         public List<Move> Moves { get; set; } = new();
 
     }

@@ -15,11 +15,9 @@ builder.Services.AddSignalR();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: MyAllowSpecificOrigins,
-                      builder =>
-                      {
-                          builder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
-                      });
+                      policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
 
@@ -43,7 +41,7 @@ else
 
 app.UseHttpsRedirection();
 
-app.UseCors("CORSPolicy");
+app.UseCors(MyAllowSpecificOrigins);
 
 app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
