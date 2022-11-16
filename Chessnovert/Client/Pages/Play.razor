@@ -7,7 +7,46 @@
 @inject HttpClient Http*@
 @inject NavigationManager NavManager
 
-<button class="btn btn-outline-primary" @onclick="CreateGame">Create Game</button>
+<div class="d-flex flex-column w-50 gap-2">
+    <h3> Create a Game </h3>
+
+    <label for="timecontrolbtngroup">Time Control</label>
+    <div class="btn-group" id="timecontrolbtngroup">
+        <input type="radio" class="btn-check" name="timecontrol" id="option1minute" autocomplete="off" checked>
+
+        <label class="btn btn-dark" for="option1minute">1 minute</label>
+
+        <input type="radio" class="btn-check" name="timecontrol" id="option3minutes" autocomplete="off">
+
+        <label class="btn btn-dark" for="option3minutes">3 minutes</label>
+
+        <input type="radio" class="btn-check" name="timecontrol" id="option5minutes" autocomplete="off">
+
+        <label class="btn btn-dark" for="option5minutes">5 minutes</label>
+
+        <input type="radio" class="btn-check" name="timecontrol" id="option10minutes" autocomplete="off">
+
+        <label class="btn btn-dark" for="option10minutes">10 minutes</label>
+    </div>
+
+    <label for="playasbtngroup">Play as</label>
+    <div class="btn-group" id="playasbtngroup">
+        <input type="radio" class="btn-check" name="playercolor" id="optionWhite" autocomplete="off" checked>
+
+        <label class="btn btn-dark" for="optionWhite">White</label>
+
+        <input type="radio" class="btn-check" name="playercolor" id="optionRandom" autocomplete="off">
+
+        <label class="btn btn-dark" for="optionRandom">Random</label>
+
+        <input type="radio" class="btn-check" name="playercolor" id="optionBlack" autocomplete="off">
+
+        <label class="btn btn-dark" for="optionBlack">Black</label>
+    </div>
+
+    <button class="btn btn-outline-primary" @onclick="CreateGame">Create Game</button>
+</div>
+
 <div>
     @if (Games != null)
     {
@@ -23,7 +62,8 @@
     List<Chessnovert.Shared.Game>? Games;
     HttpClient httpClient = new();
 
-    protected override async Task OnInitializedAsync(){
+    protected override async Task OnInitializedAsync()
+    {
         try
         {
             //TO BE REPLACED WITH: injected http;
@@ -36,10 +76,11 @@
         }
     }
 
-    async Task CreateGame(){
+    async Task CreateGame()
+    {
         // send current user Id
         var response = await httpClient.PostAsJsonAsync("https://tl222.local:5001/api/Games", new TimeSpan(0, 1, 0));
-        if(response.IsSuccessStatusCode)
+        if (response.IsSuccessStatusCode)
         {
             Chessnovert.Shared.Game? createdGame = await response.Content.ReadFromJsonAsync<Chessnovert.Shared.Game>();
 
