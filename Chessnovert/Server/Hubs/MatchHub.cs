@@ -73,7 +73,7 @@ namespace Chessnovert.Server.Hubs
                 else
                 {
                     game.Moves.Add(move);
-                    // TODO: source and destination parameters to be replaced with Move Struct
+                    // TODO: source and destination parameters to be replaced with Move Class
                     int remainingTime = (int)(game.TimeControl - sum).TotalSeconds;
                     await Clients.Client(Context.ConnectionId).SendAsync("Synchronize", remainingTime);
                     await Clients.GroupExcept(gameId.ToString(), Context.ConnectionId).SendAsync("Moved", source, destination, remainingTime);

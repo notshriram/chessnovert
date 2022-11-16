@@ -12,13 +12,13 @@
 }
 
 .dark-mode {
-    --background: #000;
-    --font-color: white;
-    --highlight: #000;
-    --highlight2: #111;
-    --link: #3ca4ff;
-    --sidebar-gradient-top: #000;
-    --sidebar-gradient-bottom: #3a0647;
+    --background: #17181C;
+    --font-color: #BABBBB;
+    --highlight: #0A0A0A;
+    --highlight2: #121212;
+    --link: #1E56B1;
+    --sidebar-gradient-top: #111;
+    --sidebar-gradient-bottom: #111;
     --logo: url("css/assets/Chessnovert-Logo-Dark.svg");
 }
 
