@@ -1,0 +1,12 @@
+﻿@media (max-width: 640.98px) {
+    #creategamewizard {
+        width: 100%;
+    }
+}
+
+@media (min-width: 641px) {
+    #creategamewizard {
+        width: 50%;
+    }
+}
+

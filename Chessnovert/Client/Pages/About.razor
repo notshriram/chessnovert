@@ -1,28 +1,32 @@
 ﻿@page "/about"
 
-<h3>About</h3>
-<header>
-    <div class="logo" src="/css/assets/Chessnovert-Logo-Bold.svg"></div>
-    <p>Copyright &copy; 2022 Shriram Ravindranathan</p>
-</header>
+<div class="d-flex flex-column justify-content-center align-items-center">
+    <h3>About</h3>
+    <section class="d-flex flex-column justify-content-center align-items-center">
+        <div class="logo" src="/css/assets/Chessnovert-Logo-Bold.svg"></div>
+        <p>Copyright &copy; 2022 Shriram Ravindranathan</p>
+    </section>
 
-<section>
-    <p> License <a href="https://www.gnu.org/licenses/agpl.txt">AGPLv3</a>: GNU Affero General Public License v3.0 only. 
-        This is free software: you are free to change and redistribute it. 
-        There is NO WARRANTY, to the extent permitted by law.</p>
-</section>
+    <section class="d-flex flex-column justify-content-center align-items-center text-center">
+        <p>
+            License <a href="https://www.gnu.org/licenses/agpl.txt">AGPLv3</a>: GNU Affero General Public License v3.0 only.
+            This is free software: you are free to change and redistribute it.
+            There is NO WARRANTY, to the extent permitted by law.
+        </p>
+    </section>
 
-<section>
-    Written by:
-    Shriram Ravindranathan
-</section>
+    <section class="d-flex flex-column justify-content-center align-items-center text-center">
+        As per the provisions of the AGPL, you may download the source code for this application.
+        <a href="css/assets/Chessnovert-Logo-Light.svg" download="foo.jpeg" target="_top">
+            Chessnovert Source (tar.gz)
+        </a>
+    </section>
 
-<section>
-    As per the provisions of the AGPL, you may download the source code for this application.
-    <a href="css/assets/Chessnovert-Logo-Light.svg" download="foo.jpeg" target="_top">
-        Chessnovert Source (tar.gz)
-    </a>
-</section>
+    <section class="d-flex flex-column justify-content-center align-items-center text-center">
+        Written by:
+        Shriram Ravindranathan
+    </section>
+</div>
 
 @code {
 

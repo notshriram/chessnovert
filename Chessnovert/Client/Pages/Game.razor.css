@@ -1,0 +1,17 @@
+﻿#board-container {
+    display: flex;
+    width: 100%;
+}
+
+@media (max-width: 640.98px) {
+    #board-container {
+        flex-direction: column;
+    }
+}
+
+@media (min-width: 641px) {
+    #board-container {
+        flex-direction: row;
+    }
+}
+
