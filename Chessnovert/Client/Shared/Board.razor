@@ -120,11 +120,17 @@
                 Console.WriteLine("Another Player has Joined the Game");
             });
 
-            HubConnection.On<Coordinate, Coordinate, int>("Moved", OnMoveEvent);
+            HubConnection.On<Coordinate, Coordinate, int>("Moved", (Coordinate source, Coordinate destination, int remainingTime) =>
+            {
+                OnMoveEvent(source, destination, remainingTime);
+                var previousColor = currentTurn == Color.White ? Color.Black : Color.White;
+                Game.Moves.Add(new Move(source, destination, previousColor ));
+            });
 
             HubConnection.On<int>("Synchronize", i => { OnMoveCompleted.InvokeAsync(i); });
 
-            HubConnection.On<Color>("TimedOut", (color) => { 
+            HubConnection.On<Color>("TimedOut", (color) =>
+            {
                 Console.WriteLine($"{color} has run out of time");
                 OnGameOver.InvokeAsync();
             });
@@ -145,6 +151,8 @@
                     HubConnection.SendAsync("Move", Game.Id, activePiece.Position, position, PlayerColor);
                     Console.WriteLine("SendAsync Move");
                 }
+
+                Game.Moves.Add(new Move(activePiece.Position, position, activePiece.Color));
                 board[activePiece.Position.Row, activePiece.Position.Col] = null!;
                 activePiece.Position = position;
                 board[position.Row, position.Col] = activePiece;
@@ -192,5 +200,42 @@
             return;
         }
         activePiece = piece;
+    }
+
+    protected bool IsKingInCheck(Piece[,] projectedBoard, Color color)
+    {
+        Piece? king = null;
+        for (int i = 0; i < 8; i++)
+        {
+            for (int j = 0; j < 8; j++)
+            {
+                if (projectedBoard[i, j] != null && projectedBoard[i, j].Value == 'K')
+                {
+                    if (board[i, j].Color == color)
+                    {
+                        king = projectedBoard[i, j];
+                    }
+                }
+            }
+            Console.WriteLine();
+        }
+        // WTF
+        if (king == null) return true;
+
+        for (int i = 0; i < 8; i++)
+        {
+            for (int j = 0; j < 8; j++)
+            {
+                Piece? currentPiece = projectedBoard[i, j];
+                if (currentPiece != null)
+                {
+                    if (currentPiece.IsLegal(king.Position, projectedBoard))
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 }
