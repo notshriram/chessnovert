@@ -22,14 +22,46 @@
 
 @code {
     private string selectedTheme = "Light";
+    private DotNetObjectReference<MainLayout>? objRef;
+
+    [JSInvokable]
+    public async Task OnSystemThemeChange(bool isDarkMode)
+    {
+        if(isDarkMode)
+        {
+            selectedTheme = "Dark";
+        }
+        else 
+        {
+            selectedTheme = "Light";
+        }
+        StateHasChanged();
+        await js.InvokeVoidAsync("addToLocalStorage", "theme", selectedTheme);
+    }
 
     protected override async Task OnInitializedAsync()
     {
+        // Start event listener in index.html
+        objRef = DotNetObjectReference.Create(this);
+        await TriggerDotNetInstanceMethod();
+
+        // Set Theme According to Saved theme or System Preference
         var savedTheme = await js.InvokeAsync<string>("getFromLocalStorage", "theme");
+        var systemPrefersDark = await js.InvokeAsync<bool>("prefersDarkTheme");
         if(!string.IsNullOrEmpty(savedTheme))
         {
             selectedTheme = savedTheme;
         }
+        else if (systemPrefersDark)
+        {
+            selectedTheme = "Dark";
+        }
+    }
+
+    // Add System Theme Event Listener
+    public async Task TriggerDotNetInstanceMethod()
+    {
+        await js.InvokeAsync<string>("onSystemThemeChange", objRef);
     }
 
     private bool IsSelected(string option)

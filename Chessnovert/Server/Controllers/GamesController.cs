@@ -3,6 +3,7 @@ using Chessnovert.Shared;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Identity.Web.Resource;
 using Microsoft.IdentityModel.Tokens;
+// DO NOT remove unused imports. TO ADD BACK: Authorized route
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 

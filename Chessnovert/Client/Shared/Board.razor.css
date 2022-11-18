@@ -3,7 +3,7 @@
     width:100%;
     aspect-ratio:1;
 }
-.board-row {
+.rank {
     display: grid;
     grid-template-columns: repeat(8,1fr);
 }
@@ -30,20 +30,20 @@
     }
 }
 
-.board-row:nth-child(2n) .cell:nth-child(2n){
-    background: #ccc;
+.rank:nth-child(2n) .cell:nth-child(2n) {
+    background: #80708c;
 }
-.board-row:nth-child(2n) .cell:nth-child(2n+1) {
+.rank:nth-child(2n) .cell:nth-child(2n+1) {
     background: #3a0647F0;
     /*background: transparent;*/
 }
-.board-row:nth-child(2n+1) .cell:nth-child(2n) {
+.rank:nth-child(2n+1) .cell:nth-child(2n) {
     background: #3a0647F0;
     /*background: transparent;*/
 }
 
-.board-row:nth-child(2n+1) .cell:nth-child(2n+1){
-    background: #ccc;
+.rank:nth-child(2n+1) .cell:nth-child(2n+1) {
+    background: #80708c;
 }
 
 .piece {
