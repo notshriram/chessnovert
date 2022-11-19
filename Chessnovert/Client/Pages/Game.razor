@@ -5,7 +5,6 @@
 
 @if (found != null)
 {
-
     if (found == true)
     {
         <div id="board-container">
@@ -13,10 +12,14 @@
                    Game="@game"
                    PlayerColor="@playerColor"
                    OnMoveCompleted="SynchronizeClocks"
-                   OnGameOver="StopClocksAsync" />
+                   OnGameOver="OnGameOver" />
             <div class="d-flex flex-column justify-content-between align-items-center">
                 @* replace with timer component*@
                 <div>Black: @remainingSecondsBlack</div>
+                @if(winner!=null)
+                {
+                    <div>@winner wins</div>
+                }
                 <div>White: @remainingSecondsWhite</div>
             </div>
         </div>
@@ -45,6 +48,7 @@ else
     private Task? _clockTask;
     private readonly PeriodicTimer _timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1000));
     private readonly CancellationTokenSource _cts = new();
+    Color? winner = null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -125,7 +129,6 @@ else
                     remainingSecondsBlack--;
                     StateHasChanged();
                 }
-                Console.WriteLine($"Black: {remainingSecondsBlack} :: White: {remainingSecondsWhite}");
             }
         }
         catch (OperationCanceledException e)
@@ -144,5 +147,13 @@ else
         await _clockTask;
         _cts.Dispose();
         Console.WriteLine("Cancelled");
+    }
+
+    public async Task OnGameOver(string message)
+    {
+        await StopClocksAsync();
+        winner = currentlyMoving == Color.White ? Color.Black : Color.White;
+        Console.WriteLine($"{winner} wins by {message}");
+        StateHasChanged();
     }
 }

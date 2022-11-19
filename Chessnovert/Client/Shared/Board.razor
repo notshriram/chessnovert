@@ -17,7 +17,7 @@
                 bool isValid = false;
                 if (activePiece != null)
                 {
-                    isValid = activePiece.IsLegal(position, board);
+                    isValid = TryMove(activePiece.Position, position);
                 }
                 <div @onclick="()=>MoveToPosition(position)" class="cell @(isValid?"valid":"")">
                     @if (piece != null)
@@ -49,11 +49,12 @@
 
     // TODO: Take Template Param String Reason
     [Parameter]
-    public EventCallback OnGameOver { get; set; }
+    public EventCallback<string> OnGameOver { get; set; }
 
     Piece[,] board = new Piece[8, 8];
     Piece activePiece = null!;
     Color currentTurn;
+    int validMoves = 0;
 
     protected override void OnInitialized()
     {
@@ -84,6 +85,7 @@
         board[7, 7] = new Rook(Color.Black, new Coordinate { Row = 7, Col = 7 });
 
         currentTurn = Color.White;
+        validMoves = CountValidMoves(currentTurn);
 
         base.OnInitialized();
 
@@ -124,7 +126,7 @@
             {
                 OnMoveEvent(source, destination, remainingTime);
                 var previousColor = currentTurn == Color.White ? Color.Black : Color.White;
-                Game.Moves.Add(new Move(source, destination, previousColor ));
+                Game.Moves.Add(new Move(source, destination, previousColor));
             });
 
             HubConnection.On<int>("Synchronize", i => { OnMoveCompleted.InvokeAsync(i); });
@@ -140,10 +142,10 @@
     }
     protected void MoveToPosition(Coordinate position)
     {
-        Console.WriteLine(position.Row.ToString() + position.Col.ToString());
+        Console.WriteLine(position);
         if (activePiece != null)
         {
-            if (activePiece.IsLegal(position, board))
+            if (TryMove(activePiece.Position, position))
             {
                 Console.WriteLine("legal");
                 if (HubConnection != null)
@@ -159,6 +161,11 @@
                 activePiece = null!;
                 currentTurn = currentTurn == Color.White ? Color.Black : Color.White;
                 Console.WriteLine($"It's {currentTurn}'s turn");
+                validMoves = CountValidMoves(currentTurn);
+                if(validMoves == 0)
+                {
+                    OnGameOver.InvokeAsync("Checkmate");
+                }
             }
             else if (position == activePiece.Position)
             {
@@ -190,6 +197,11 @@
         currentTurn = currentTurn == Color.White ? Color.Black : Color.White;
         Console.WriteLine($"It's {currentTurn}'s turn");
         OnMoveCompleted.InvokeAsync(remainingTime);
+        validMoves = CountValidMoves(currentTurn);
+        if (validMoves == 0)
+        {
+            OnGameOver.InvokeAsync("Checkmate");
+        }
         StateHasChanged();
     }
 
@@ -202,35 +214,38 @@
         activePiece = piece;
     }
 
-    protected bool IsKingInCheck(Piece[,] projectedBoard, Color color)
+    protected bool IsKingInCheck(Color color)
     {
         Piece? king = null;
         for (int i = 0; i < 8; i++)
         {
             for (int j = 0; j < 8; j++)
             {
-                if (projectedBoard[i, j] != null && projectedBoard[i, j].Value == 'K')
+                if (board[i, j] != null && board[i, j].Value == 'K')
                 {
                     if (board[i, j].Color == color)
                     {
-                        king = projectedBoard[i, j];
+                        king = board[i, j];
                     }
                 }
             }
-            Console.WriteLine();
         }
         // WTF
-        if (king == null) return true;
+        if (king == null)
+        {
+            throw new NullReferenceException($"No {color} King Found");
+        }
 
         for (int i = 0; i < 8; i++)
         {
             for (int j = 0; j < 8; j++)
             {
-                Piece? currentPiece = projectedBoard[i, j];
+                Piece? currentPiece = board[i, j];
                 if (currentPiece != null)
                 {
-                    if (currentPiece.IsLegal(king.Position, projectedBoard))
+                    if (currentPiece.IsLegal(king.Position, board))
                     {
+                        Console.WriteLine($"{currentPiece.Color} {currentPiece.Name} can capture {color} King");
                         return true;
                     }
                 }
@@ -238,4 +253,56 @@
         }
         return false;
     }
+
+    protected bool TryMove(Coordinate source, Coordinate destination)
+    {
+        var sourcePiece = board[source.Row, source.Col];
+        var destinationPiece = board[destination.Row, destination.Col];
+        bool isIllegal = true;
+        if (sourcePiece != null)
+        {
+            if (sourcePiece.IsLegal(destination, board))
+            {
+                Console.WriteLine("Pseudo Legal Check Passed");
+                // make move
+                board[source.Row, source.Col] = null!;
+                sourcePiece.Position = destination;
+                board[destination.Row, destination.Col] = sourcePiece;
+                if (!IsKingInCheck(sourcePiece.Color))
+                {
+                    isIllegal = false;
+                }
+                else
+                {
+                    Console.WriteLine("King exposed to check");
+                }
+                // unmake move
+                board[destination.Row, destination.Col] = destinationPiece;
+                sourcePiece.Position = source;
+                board[source.Row, source.Col] = sourcePiece;
+            }
+        }
+        return !isIllegal;
+    }
+
+    public int CountValidMoves(Color color)
+    {
+        int count = 0;
+        for (int i = 0; i < 8; i++)
+            for (int j = 0; j < 8; j++)
+            {
+                Coordinate source = new Coordinate(i, j);
+                if (board[i, j] != null && board[i,j].Color == color)
+                {
+                    for (int r = 0; r < 8; r++)
+                        for (int c = 0; c < 8; c++)
+                        {
+                            Coordinate destination = new Coordinate(r, c);
+                            if (TryMove(source, destination)) count++;
+                        }
+                }
+            }
+        return count;
+    }
+
 }
