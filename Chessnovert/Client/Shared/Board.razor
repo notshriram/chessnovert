@@ -145,49 +145,29 @@
         Console.WriteLine(position);
         if (activePiece != null)
         {
-            if(activePiece.Value=='K'
-            && (position.Row == activePiece.Position.Row) 
-            && (Math.Abs(position.Col - activePiece.Position.Col) == 2))
-            {
-                int direction = activePiece.Position.Col > position.Col ? -1 : 1;
 
-                Piece? rook = board[activePiece.Position.Row, position.Col + direction];
-
-                Coordinate rookDestination = new Coordinate(position.Row, position.Col - direction);
-                if (CanCastle(activePiece, position))
-                {
-
-                    if (HubConnection != null)
-                    {
-                        HubConnection.SendAsync("Move", Game.Id, activePiece.Position, position, PlayerColor);
-                        Console.WriteLine("SendAsync Move");
-                    }
-                    // make move
-                    board[activePiece.Position.Row, activePiece.Position.Col] = null!;
-                    activePiece.Position = position;
-                    board[position.Row, position.Col] = activePiece;
-
-                    board[rook.Position.Row, rook.Position.Col] = null!;
-                    rook.Position = rookDestination;
-                    board[rookDestination.Row, rookDestination.Col] = rook;
-
-                    Game.Moves.Add(new Move(activePiece.Position, position, activePiece.Color));
-
-                    Console.WriteLine("Castled");
-                    activePiece = null!;
-                    currentTurn = currentTurn == Color.White ? Color.Black : Color.White;
-                    Console.WriteLine($"It's {currentTurn}'s turn");
-                    validMoves = CountValidMoves(currentTurn);
-                    if (validMoves == 0)
-                    {
-                        OnGameOver.InvokeAsync("Checkmate");
-                    }
-                }
-                return;
-            }
             if (TryMove(activePiece.Position, position))
             {
                 Console.WriteLine("legal");
+
+                // Check for Castle
+                if (activePiece.Value == 'K'
+                && (position.Row == activePiece.Position.Row)
+                && (Math.Abs(position.Col - activePiece.Position.Col) == 2))
+                {
+                    int direction = activePiece.Position.Col > position.Col ? -1 : 1;
+                    Piece? rook = board[activePiece.Position.Row, position.Col + direction];
+                    Coordinate rookDestination = new Coordinate(position.Row, position.Col - direction);
+
+                    if (CanCastle(activePiece, position))
+                    {
+                        // flip le rook
+                        board[rook.Position.Row, rook.Position.Col] = null!;
+                        rook.Position = rookDestination;
+                        board[rookDestination.Row, rookDestination.Col] = rook;
+                        Console.WriteLine("Castled");
+                    }
+                }
                 if (HubConnection != null)
                 {
                     HubConnection.SendAsync("Move", Game.Id, activePiece.Position, position, PlayerColor);
@@ -405,7 +385,7 @@
 
         if (rook == null) return false;
 
-        for (int i = king.Position.Col + direction; i != destination.Col; i+=direction)
+        for (int i = king.Position.Col + direction; i != destination.Col; i += direction)
             if (!TryMove(king.Position, new Coordinate(destination.Row, i)))
                 return false;
 
