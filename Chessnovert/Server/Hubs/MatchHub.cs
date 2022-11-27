@@ -20,21 +20,7 @@ namespace Chessnovert.Server.Hubs
             {
                 var game = gameService.Get(gameId);
                 // TODO: Replace with random selection
-                /*
-                 if (game.PlayerWhite == Guid.Empty && game.PlayerBlack == Guid.Empty)
-                    {
-                        // choose randomly 
-                        var rnd = new Random(DateTime.Now.Millisecond);
-                        int choice = rnd.Next(0, 2);
-                        if(choice == 0)
-                            game.PlayerWhite = Guid.NewGuid();
-                        else
-                            game.PlayerBlack = Guid.NewGuid();
-
-                    }
-                else 
-                 * 
-                */
+                // TODO UPDATED: Choose randomly from Client Side
                 if (game.PlayerWhite == Guid.Empty)
                 {
                     game.PlayerWhite = Guid.NewGuid();
@@ -74,7 +60,7 @@ namespace Chessnovert.Server.Hubs
                 {
                     game.Moves.Add(move);
                     // TODO: source and destination parameters to be replaced with Move Class
-                    int remainingTime = (int)(game.TimeControl - sum).TotalSeconds;
+                    TimeSpan remainingTime = game.TimeControl - sum;
                     await Clients.Client(Context.ConnectionId).SendAsync("Synchronize", remainingTime);
                     await Clients.GroupExcept(gameId.ToString(), Context.ConnectionId).SendAsync("Moved", source, destination, remainingTime);
                 }

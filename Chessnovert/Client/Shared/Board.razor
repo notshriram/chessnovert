@@ -45,7 +45,7 @@
     public Color? PlayerColor { get; set; }
 
     [Parameter]
-    public EventCallback<int> OnMoveCompleted { get; set; }
+    public EventCallback<TimeSpan> OnMoveCompleted { get; set; }
 
     // TODO: Take Template Param "GameResult" Result
     [Parameter]
@@ -95,7 +95,7 @@
         {
             foreach (var move in moves)
             {
-                OnMoveEvent(move.Source, move.Destination, (int)Game.TimeControl.TotalSeconds);
+                OnMoveEvent(move.Source, move.Destination, Game.TimeControl);
             }
         }
         else
@@ -122,14 +122,14 @@
                 Console.WriteLine("Another Player has Joined the Game");
             });
 
-            HubConnection.On<Coordinate, Coordinate, int>("Moved", (Coordinate source, Coordinate destination, int remainingTime) =>
+            HubConnection.On<Coordinate, Coordinate, TimeSpan>("Moved", (Coordinate source, Coordinate destination, TimeSpan remainingTime) =>
             {
                 OnMoveEvent(source, destination, remainingTime);
                 var previousColor = currentTurn == Color.White ? Color.Black : Color.White;
                 Game.Moves.Add(new Move(source, destination, previousColor));
             });
 
-            HubConnection.On<int>("Synchronize", i => { OnMoveCompleted.InvokeAsync(i); });
+            HubConnection.On<TimeSpan>("Synchronize", remaining => { OnMoveCompleted.InvokeAsync(remaining); });
 
             HubConnection.On<Color>("TimedOut", (color) =>
             {
@@ -198,7 +198,7 @@
             }
         }
     }
-    protected void OnMoveEvent(Coordinate source, Coordinate destination, int remainingTime)
+    protected void OnMoveEvent(Coordinate source, Coordinate destination, TimeSpan remainingTime)
     {
         Console.WriteLine("Move from " + source.Row + source.Col + " to " + destination.Row + destination.Col);
         var sourcePiece = board[source.Row, source.Col];

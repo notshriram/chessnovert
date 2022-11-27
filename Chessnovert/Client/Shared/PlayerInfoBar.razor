@@ -1,0 +1,15 @@
+﻿
+<div class="d-flex justify-content-between align-items-center flex-row gap-2 infobar">
+    <div class="d-flex align-items-center gap-1 justify-content-start">
+        <div id="avatar"></div>
+        <div>@FullName</div>
+    </div>
+    <Clock Time="@Time"/>
+</div>
+
+@code {
+    [Parameter]
+    public string FullName { get; set; } = "Someone McSomewhere";
+    [Parameter]
+    public TimeSpan Time { get; set; } = TimeSpan.Zero;
+}

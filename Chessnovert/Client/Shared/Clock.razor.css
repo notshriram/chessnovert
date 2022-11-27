@@ -1,0 +1,12 @@
+﻿.clock {
+    background: var(--highlight);
+    color: var(--font-color);
+    border-radius: 5%;
+    padding-inline: 1rem;
+    padding-block: 0.5rem;
+    height: 100%;
+}
+
+.agitated {
+    background: var(--warning) !important;
+}
