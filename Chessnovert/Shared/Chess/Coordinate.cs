@@ -32,7 +32,7 @@ namespace Chessnovert.Shared.Chess
         public override string ToString()
         {
             string columnLabels = "ABCDEFGH";
-            string algebraicNotation = columnLabels[7-Col] + (7-Row).ToString();
+            string algebraicNotation = columnLabels[7-Col] + (Row).ToString();
             return algebraicNotation;
         }
 

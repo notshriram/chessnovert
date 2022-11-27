@@ -47,7 +47,7 @@
     [Parameter]
     public EventCallback<int> OnMoveCompleted { get; set; }
 
-    // TODO: Take Template Param String Reason
+    // TODO: Take Template Param "GameResult" Result
     [Parameter]
     public EventCallback<string> OnGameOver { get; set; }
 
@@ -134,7 +134,7 @@
             HubConnection.On<Color>("TimedOut", (color) =>
             {
                 Console.WriteLine($"{color} has run out of time");
-                OnGameOver.InvokeAsync();
+                OnGameOver.InvokeAsync("Timeout");
             });
 
         }
@@ -145,6 +145,46 @@
         Console.WriteLine(position);
         if (activePiece != null)
         {
+            if(activePiece.Value=='K'
+            && (position.Row == activePiece.Position.Row) 
+            && (Math.Abs(position.Col - activePiece.Position.Col) == 2))
+            {
+                int direction = activePiece.Position.Col > position.Col ? -1 : 1;
+
+                Piece? rook = board[activePiece.Position.Row, position.Col + direction];
+
+                Coordinate rookDestination = new Coordinate(position.Row, position.Col - direction);
+                if (CanCastle(activePiece, position))
+                {
+
+                    if (HubConnection != null)
+                    {
+                        HubConnection.SendAsync("Move", Game.Id, activePiece.Position, position, PlayerColor);
+                        Console.WriteLine("SendAsync Move");
+                    }
+                    // make move
+                    board[activePiece.Position.Row, activePiece.Position.Col] = null!;
+                    activePiece.Position = position;
+                    board[position.Row, position.Col] = activePiece;
+
+                    board[rook.Position.Row, rook.Position.Col] = null!;
+                    rook.Position = rookDestination;
+                    board[rookDestination.Row, rookDestination.Col] = rook;
+
+                    Game.Moves.Add(new Move(activePiece.Position, position, activePiece.Color));
+
+                    Console.WriteLine("Castled");
+                    activePiece = null!;
+                    currentTurn = currentTurn == Color.White ? Color.Black : Color.White;
+                    Console.WriteLine($"It's {currentTurn}'s turn");
+                    validMoves = CountValidMoves(currentTurn);
+                    if (validMoves == 0)
+                    {
+                        OnGameOver.InvokeAsync("Checkmate");
+                    }
+                }
+                return;
+            }
             if (TryMove(activePiece.Position, position))
             {
                 Console.WriteLine("legal");
@@ -162,7 +202,7 @@
                 currentTurn = currentTurn == Color.White ? Color.Black : Color.White;
                 Console.WriteLine($"It's {currentTurn}'s turn");
                 validMoves = CountValidMoves(currentTurn);
-                if(validMoves == 0)
+                if (validMoves == 0)
                 {
                     OnGameOver.InvokeAsync("Checkmate");
                 }
@@ -185,8 +225,27 @@
         if (sourcePiece != null)
         {
             activePiece = sourcePiece;
+
             if (activePiece.IsLegal(destination, board))
             {
+                if (activePiece.Value == 'K'
+                && (destination.Row == activePiece.Position.Row)
+                && (Math.Abs(destination.Col - activePiece.Position.Col) == 2))
+                {
+                    if (CanCastle(activePiece, destination))
+                    {
+                        var position = destination;
+                        int direction = activePiece.Position.Col > position.Col ? -1 : 1;
+                        Piece? rook = board[activePiece.Position.Row, position.Col + direction];
+                        Coordinate rookDestination = new Coordinate(position.Row, position.Col - direction);
+
+                        board[rook.Position.Row, rook.Position.Col] = null!;
+                        rook.Position = rookDestination;
+                        board[rookDestination.Row, rookDestination.Col] = rook;
+                    }
+                    else return;
+
+                }
                 Console.WriteLine("legal");
                 board[activePiece.Position.Row, activePiece.Position.Col] = null!;
                 activePiece.Position = destination;
@@ -285,6 +344,74 @@
         return !isIllegal;
     }
 
+    protected bool TryCastle(Piece king, Coordinate kingDestination,
+        Piece rook, Coordinate rookDestination)
+    {
+        var kingSource = king.Position;
+        var rookSource = rook.Position;
+        var kingDestinationOccupant = board[kingDestination.Row, kingDestination.Col];
+        var rookDestinationOccupant = board[rookDestination.Row, rookDestination.Col];
+
+        if (kingDestinationOccupant != null || rookDestinationOccupant != null)
+        {
+            return false;
+        }
+
+        // result
+        bool isIllegal = true;
+
+        // make move
+        board[king.Position.Row, king.Position.Col] = null!;
+        king.Position = kingDestination;
+        board[kingDestination.Row, kingDestination.Col] = king;
+
+        board[rook.Position.Row, rook.Position.Col] = null!;
+        rook.Position = rookDestination;
+        board[rookDestination.Row, rookDestination.Col] = rook;
+
+
+        if (!IsKingInCheck(king.Color))
+        {
+            isIllegal = false;
+        }
+
+        // unmake move
+        board[king.Position.Row, king.Position.Col] = null!;
+        king.Position = kingSource;
+        board[kingSource.Row, kingSource.Col] = king;
+
+        board[rook.Position.Row, rook.Position.Col] = null!;
+        rook.Position = rookSource;
+        board[rookSource.Row, rookSource.Col] = rook;
+
+        return !isIllegal;
+    }
+
+    protected bool CanCastle(Piece king, Coordinate destination)
+    {
+
+        if (king.Value != 'K')
+        {
+            return false;
+        }
+        if (king.Position.Row != destination.Row)
+        {
+            return false;
+        }
+
+        int direction = king.Position.Col > destination.Col ? -1 : 1;
+
+        Piece? rook = board[king.Position.Row, destination.Col + direction];
+
+        if (rook == null) return false;
+
+        for (int i = king.Position.Col + direction; i != destination.Col; i+=direction)
+            if (!TryMove(king.Position, new Coordinate(destination.Row, i)))
+                return false;
+
+        return TryCastle(king, destination, rook, new Coordinate(destination.Row, destination.Col - direction));
+    }
+
     public int CountValidMoves(Color color)
     {
         int count = 0;
@@ -292,7 +419,7 @@
             for (int j = 0; j < 8; j++)
             {
                 Coordinate source = new Coordinate(i, j);
-                if (board[i, j] != null && board[i,j].Color == color)
+                if (board[i, j] != null && board[i, j].Color == color)
                 {
                     for (int r = 0; r < 8; r++)
                         for (int c = 0; c < 8; c++)

@@ -12,19 +12,19 @@
 
     <label for="timecontrolbtngroup">Time Control</label>
     <div class="btn-group" id="timecontrolbtngroup">
-        <input type="radio" class="btn-check" name="timecontrol" id="option1minute" autocomplete="off" checked>
+        <input @onclick="()=>timeControlChoice=1" type="radio" class="btn-check" name="timecontrol" id="option1minute" autocomplete="off" checked>
 
         <label class="btn btn-dark" for="option1minute">1 minute</label>
 
-        <input type="radio" class="btn-check" name="timecontrol" id="option3minutes" autocomplete="off">
+        <input @onclick="()=>timeControlChoice=3" type="radio" class="btn-check" name="timecontrol" id="option3minutes" autocomplete="off">
 
         <label class="btn btn-dark" for="option3minutes">3 minutes</label>
 
-        <input type="radio" class="btn-check" name="timecontrol" id="option5minutes" autocomplete="off">
+        <input @onclick="()=>timeControlChoice=5" type="radio" class="btn-check" name="timecontrol" id="option5minutes" autocomplete="off">
 
         <label class="btn btn-dark" for="option5minutes">5 minutes</label>
 
-        <input type="radio" class="btn-check" name="timecontrol" id="option10minutes" autocomplete="off">
+        <input @onclick="()=>timeControlChoice=10" type="radio" class="btn-check" name="timecontrol" id="option10minutes" autocomplete="off">
 
         <label class="btn btn-dark" for="option10minutes">10 minutes</label>
     </div>
@@ -35,11 +35,11 @@
 
         <label class="btn btn-dark" for="optionWhite">White</label>
 
-        <input type="radio" class="btn-check" name="playercolor" id="optionRandom" autocomplete="off">
+        <input type="radio" class="btn-check" name="playercolor" id="optionRandom" autocomplete="off" disabled>
 
         <label class="btn btn-dark" for="optionRandom">Random</label>
 
-        <input type="radio" class="btn-check" name="playercolor" id="optionBlack" autocomplete="off">
+        <input type="radio" class="btn-check" name="playercolor" id="optionBlack" autocomplete="off" disabled>
 
         <label class="btn btn-dark" for="optionBlack">Black</label>
     </div>
@@ -61,6 +61,7 @@
 @code {
     List<Chessnovert.Shared.Game>? Games;
     HttpClient httpClient = new();
+    private int timeControlChoice = 1;
 
     protected override async Task OnInitializedAsync()
     {
@@ -79,7 +80,7 @@
     async Task CreateGame()
     {
         // send current user Id
-        var response = await httpClient.PostAsJsonAsync("https://tl222.local:5001/api/Games", new TimeSpan(0, 10, 0));
+        var response = await httpClient.PostAsJsonAsync("https://tl222.local:5001/api/Games", new TimeSpan(0, timeControlChoice, 0));
         if (response.IsSuccessStatusCode)
         {
             Chessnovert.Shared.Game? createdGame = await response.Content.ReadFromJsonAsync<Chessnovert.Shared.Game>();

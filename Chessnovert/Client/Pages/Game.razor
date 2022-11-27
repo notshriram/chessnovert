@@ -16,9 +16,9 @@
             <div class="d-flex flex-column justify-content-between align-items-center">
                 @* replace with timer component*@
                 <div>Black: @remainingSecondsBlack</div>
-                @if(winner!=null)
+                @if(result!=null)
                 {
-                    <div>@winner wins</div>
+                    <div>@result</div>
                 }
                 <div>White: @remainingSecondsWhite</div>
             </div>
@@ -48,39 +48,43 @@ else
     private Task? _clockTask;
     private readonly PeriodicTimer _timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1000));
     private readonly CancellationTokenSource _cts = new();
-    Color? winner = null;
+    string? result = null;
 
     protected override async Task OnInitializedAsync()
     {
-        game = await httpClient.GetFromJsonAsync<Chessnovert.Shared.Game>($"https://tl222.local:5001/api/Games/{GameId}");
-        if (game != null)
+        try
         {
-            if (game.PlayerWhite == Guid.Empty)
+            game = await httpClient.GetFromJsonAsync<Chessnovert.Shared.Game>($"https://tl222.local:5001/api/Games/{GameId}");
+            if (game != null)
             {
-                // Join as Player White
-                playerColor = Color.White;
+                if (game.PlayerWhite == Guid.Empty)
+                {
+                    // Join as Player White
+                    playerColor = Color.White;
+                }
+                else if (game.PlayerBlack == Guid.Empty)
+                {
+                    // Join as Player Black
+                    playerColor = Color.Black;
+                }
+                else
+                {
+                    // Join as Spectator
+                    playerColor = null;
+                }
+                Console.WriteLine(playerColor);
+                foreach (var move in game.Moves)
+                {
+                    Console.WriteLine("Previously.. " + move.Source + " " + move.Destination);
+                }
+                await JoinGame();
+                found = true;
+                remainingSecondsBlack = remainingSecondsWhite = (int)game.TimeControl.TotalSeconds;
             }
-            else if (game.PlayerBlack == Guid.Empty)
-            {
-                // Join as Player Black
-                playerColor = Color.Black;
-            }
-            else
-            {
-                // Join as Spectator
-                playerColor = null;
-            }
-            Console.WriteLine(playerColor);
-            foreach (var move in game.Moves)
-            {
-                Console.WriteLine("Previously.. " + move.Source + " " + move.Destination);
-            }
-            await JoinGame();
-            found = true;
-            remainingSecondsBlack = remainingSecondsWhite = (int)game.TimeControl.TotalSeconds;
         }
-        else
+        catch(Exception e)
         {
+            Console.WriteLine("Request failed " + e.Message);
             found = false;
         }
     }
@@ -152,8 +156,7 @@ else
     public async Task OnGameOver(string message)
     {
         await StopClocksAsync();
-        winner = currentlyMoving == Color.White ? Color.Black : Color.White;
-        Console.WriteLine($"{winner} wins by {message}");
+        Console.WriteLine(message);
         StateHasChanged();
     }
 }
