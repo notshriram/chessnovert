@@ -1,0 +1,142 @@
+﻿@page "/targetpractice"
+@using Chessnovert.Shared.Chess
+@using Chessnovert.Shared.Chess.Enums
+@inject NavigationManager _navigationManager
+
+@if (gameOver) 
+{
+    <h5> Game Over </h5>
+    <h6> Your score : @score</h6>
+    <button class="btn btn-dark" @onclick="Restart">
+        Play Again
+    </button>
+}
+
+else
+{
+    <div class="d-flex justify-content-between">
+        <h5>@targetSquare</h5>
+        <h6>Score @score</h6>
+        <Clock Time="@remainingTime" />
+    </div>
+    <div class="board">
+        @for (int i = 0; i < 8; i++)
+        {
+            int Row = PlayerColor == Color.Black ? i : 7 - i;
+            <div class="rank">
+                @for (int j = 0; j < 8; j++)
+                {
+                    int Col = PlayerColor == Color.Black ? j : 7 - j;
+                    Coordinate position = new Coordinate { Row = Row, Col = Col };
+                    string cssClass = String.Empty;
+
+                    if (correctSquare != null && correctSquare == position)
+                    {
+                        cssClass = "correct";
+                    }
+                    if (wrongSquare != null && wrongSquare == position)
+                    {
+                        cssClass = "wrong";
+                    }
+
+                    <div @onclick="()=>ClickSquare(position)" class="cell @cssClass">
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+@code {
+    public Color PlayerColor { get; set; } = Color.White;
+
+    // Clock
+    private Task? _clockTask;
+    private readonly PeriodicTimer _timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1000));
+    private readonly CancellationTokenSource _cts = new();
+    private TimeSpan remainingTime = TimeSpan.FromSeconds(30);
+
+    private Coordinate targetSquare;
+    private Coordinate? correctSquare = null;
+    private Coordinate? wrongSquare = null;
+    private int score = 0;
+    private bool gameOver = false;
+    Random rnd = new Random();
+
+    protected override void OnInitialized()
+    {
+        targetSquare = new Coordinate(rnd.Next(0, 8), rnd.Next(0, 8));
+        Console.WriteLine($"New Coordinate {targetSquare}");
+    }
+
+    protected bool CheckTarget(Coordinate clickedSquare)
+    {
+        Console.WriteLine($"Clicked {clickedSquare}");
+        return clickedSquare == targetSquare;
+    }
+
+    protected void ClickSquare(Coordinate clickedSquare)
+    {
+        if (_clockTask == null)
+        {
+            StartClocks();
+        }
+        if(CheckTarget(clickedSquare))
+        {
+            correctSquare = clickedSquare;
+            score++;
+            targetSquare = new Coordinate(rnd.Next(0, 8), rnd.Next(0, 8));
+            Console.WriteLine($"New Coordinate {targetSquare}");
+            StateHasChanged();
+        }
+        else 
+        {
+            wrongSquare = clickedSquare;
+        }
+    }
+
+    protected void StartClocks()
+    {
+        _clockTask = UpdateClocksAsync();
+    }
+
+    private async Task UpdateClocksAsync()
+    {
+        try
+        {
+            while (await _timer.WaitForNextTickAsync(_cts.Token))
+            {
+                remainingTime -= TimeSpan.FromMilliseconds(1000);
+                if(remainingTime <= TimeSpan.Zero)
+                {
+                    gameOver = true;
+                    await StopClocksAsync();
+                }
+                correctSquare = null;
+                wrongSquare = null;
+                StateHasChanged();
+            }
+        }
+        catch (OperationCanceledException e)
+        {
+            Console.WriteLine("UpdateClocksAsync Exception: " + e.Message);
+        }
+    }
+
+    public async Task StopClocksAsync()
+    {
+        if (_clockTask is null)
+        {
+            return;
+        }
+        _cts.Cancel();
+        await _clockTask;
+        _cts.Dispose();
+        Console.WriteLine("Cancelled");
+    }
+
+    public void Restart()
+    {
+        _navigationManager.NavigateTo("/targetpractice");
+        StateHasChanged();
+    }
+}

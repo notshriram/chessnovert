@@ -19,20 +19,41 @@ namespace Chessnovert.Shared.Chess
 
         }
 
-        public bool Equals(Coordinate other) => this.Row == other.Row && this.Col == other.Col;
+        public bool Equals(Coordinate? other)
+        {
+            if (other is null)
+            {
+                return false;
+            }
+            return this.Row == other.Row && this.Col == other.Col;
+        }
 
-        public override bool Equals([NotNullWhen(true)] object? obj) => obj is Coordinate other && this.Equals(other);
+        public override bool Equals(object? obj) => obj is Coordinate other && this.Equals(other);
 
         public override int GetHashCode() => (Row,Col).GetHashCode();
 
-        public static bool operator ==(Coordinate left, Coordinate right) => left.Equals(right);
+        public static bool operator ==(Coordinate? left, Coordinate? right)
+        {
+            if (left is null)
+            {
+                return right is null;
+            }
+            return left.Equals(right);
+        }
 
-        public static bool operator !=(Coordinate left, Coordinate right) => !left.Equals(right);
+        public static bool operator !=(Coordinate? left, Coordinate? right)
+        {
+            if (left is null)
+            {
+                return right is not null;
+            }
+            return !left.Equals(right);
+        }
 
         public override string ToString()
         {
             string columnLabels = "ABCDEFGH";
-            string algebraicNotation = columnLabels[7-Col] + (Row).ToString();
+            string algebraicNotation = columnLabels[7-Col] + (Row + 1).ToString();
             return algebraicNotation;
         }
 
