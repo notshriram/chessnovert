@@ -3,6 +3,11 @@
 @using Chessnovert.Shared.Chess.Enums
 @using Microsoft.AspNetCore.SignalR.Client
 
+<div class="d-flex justify-content-start gap-2">
+    <button @onclick="()=>MoveGenerationTest(2)">Test Moves</button>
+    <div>Current Move #@movenumber @movestring</div>
+</div>
+
 <div class="board">
     @for (int i = 0; i < 8; i++)
     {
@@ -32,7 +37,10 @@
     }
 </div>
 
+
 @code {
+    private string movestring = String.Empty;
+    private int movenumber = 0;
 
     // SignalR
     [Parameter]
@@ -138,7 +146,6 @@
             });
 
         }
-
     }
     protected void MoveToPosition(Coordinate position)
     {
@@ -411,5 +418,66 @@
             }
         return count;
     }
+
+    public List<Move> GenerateMoveList()
+    {
+        List<Move> MoveList = new();
+        for (int i = 0; i < 8; i++)
+            for (int j = 0; j < 8; j++)
+            {
+                Coordinate source = new Coordinate(i, j);
+                if (board[i, j] != null && board[i,j].Color == currentTurn)
+                {
+                    for (int r = 0; r < 8; r++)
+                        for (int c = 0; c < 8; c++)
+                        {
+                            Coordinate destination = new Coordinate(r, c);
+                            if (TryMove(source, destination)) MoveList.Add(new Move(source, destination, board[i, j].Color));
+                        }
+                }
+            }
+        return MoveList;
+    }
+
+    public async Task<int> MoveGenerationTest(int depth)
+    {
+        if(depth == 0)
+        {
+            return 1;
+        }
+        List<Move> moves = GenerateMoveList();
+        int count = 0;
+        foreach( var move in moves )
+        {
+            var source = move.Source;
+            var destination = move.Destination;
+            Piece? sourcePiece = board[source.Row,source.Col];
+            Piece? destinationPiece = board[destination.Row, destination.Col];
+
+            //make move
+            board[source.Row, source.Col] = null!;
+            sourcePiece.Position = destination;
+            board[destination.Row, destination.Col] = sourcePiece;
+            currentTurn = currentTurn == Color.White ? Color.Black : Color.White;
+            movenumber++;
+            movestring = $"{source} {destination}";
+            StateHasChanged();
+
+            await Task.Delay(150);
+
+            count += await MoveGenerationTest(depth - 1);
+            // unmake move
+            board[destination.Row, destination.Col] = destinationPiece;
+            sourcePiece.Position = source;
+            board[source.Row, source.Col] = sourcePiece;
+            currentTurn = currentTurn == Color.White ? Color.Black : Color.White;
+            StateHasChanged();
+            await Task.Delay(150);
+
+        }
+        return count;
+    }
+
+
 
 }

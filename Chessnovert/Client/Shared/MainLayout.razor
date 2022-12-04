@@ -11,7 +11,7 @@
             <button class="theme-switcher oi @getIconClass()" @onclick="changeTheme">
             </button>
             <LoginDisplay />
-            <select class="dropdown dropdown-toggle" @onchange="changeBoardTheme">
+            <select style="margin-left: 1rem" class="dropdown dropdown-toggle" @onchange="changeBoardTheme">
                 @foreach(var theme in boardThemes)
                 {
                     <option class="dropdown-item" selected="@(@theme==@boardTheme)" value="@theme" >@theme</option>
