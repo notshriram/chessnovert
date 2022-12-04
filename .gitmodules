@@ -1,0 +1,3 @@
+[submodule "Chessnovert/Shared/chess-openings"]
+	path = Chessnovert/Shared/chess-openings
+	url = git@github.com:lichess-org/chess-openings.git
