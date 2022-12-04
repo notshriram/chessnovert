@@ -10,6 +10,8 @@
     --sidebar-gradient-bottom: #3a0647;
     --logo: url("css/assets/Chessnovert-Logo-Light.svg");
     --warning: #f44560;
+    --square-dark: #5A5447;
+    --square-light: #8F8775;
 }
 
 .dark-mode {
@@ -106,3 +108,33 @@ main {
     .blazor-error-boundary::after {
         content: "An error has occurred."
     }
+
+.mirage {
+    --square-dark: #5A5447;
+    --square-light: #8F8775;
+}
+
+.lush {
+    --square-dark: #779755;
+    --square-light: #96B275;
+}
+
+.noir {
+    --square-dark: #13141D;
+    --square-light: #303242;
+}
+
+.wintersun {
+    --square-dark: #91BAB9;
+    --square-light: #CEE0DF;
+}
+
+.arctic {
+    --square-dark: #DADADA;
+    --square-light: #F1F1F1;
+}
+
+.pineapple {
+    --square-dark: #CFC779;
+    --square-light: #E2DFCF;
+}

@@ -1,7 +1,7 @@
 ﻿@inherits LayoutComponentBase
 @inject IJSRuntime js;
 
-<div class="page @getThemeClass()">
+<div class="page @getThemeClass() @boardTheme">
     <div class="sidebar">
         <NavMenu />
     </div>
@@ -11,7 +11,12 @@
             <button class="theme-switcher oi @getIconClass()" @onclick="changeTheme">
             </button>
             <LoginDisplay />
-            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
+            <select class="dropdown dropdown-toggle" @onchange="changeBoardTheme">
+                @foreach(var theme in boardThemes)
+                {
+                    <option class="dropdown-item" selected="@(@theme==@boardTheme)" value="@theme" >@theme</option>
+                }
+            </select>
         </div>
 
         <article class="content px-4">
@@ -22,6 +27,8 @@
 
 @code {
     private string selectedTheme = "Light";
+    private string boardTheme = "lush";
+    private List<string> boardThemes = new List<string> { "mirage", "lush", "noir", "wintersun", "arctic" , "pineapple" };
     private DotNetObjectReference<MainLayout>? objRef;
 
     [JSInvokable]
@@ -93,5 +100,10 @@
     {
         selectedTheme = IsSelected("Light") ? "Dark" : "Light";
         await js.InvokeVoidAsync("addToLocalStorage", "theme", selectedTheme);
+    }
+
+    private void changeBoardTheme(ChangeEventArgs e)
+    {
+        boardTheme = e.Value.ToString();
     }
 }

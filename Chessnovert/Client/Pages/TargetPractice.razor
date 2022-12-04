@@ -39,7 +39,9 @@ else
                         cssClass = "wrong";
                     }
 
-                    <div @onclick="()=>ClickSquare(position)" class="cell @cssClass">
+                    <div @onclick="()=>ClickSquare(position)" class="cell">
+                        <div class="w-100 h-100 @cssClass">
+                        </div>
                     </div>
                 }
             </div>
@@ -83,6 +85,7 @@ else
         if(CheckTarget(clickedSquare))
         {
             correctSquare = clickedSquare;
+            wrongSquare = null;
             score++;
             targetSquare = new Coordinate(rnd.Next(0, 8), rnd.Next(0, 8));
             Console.WriteLine($"New Coordinate {targetSquare}");
@@ -90,6 +93,7 @@ else
         }
         else 
         {
+            correctSquare = null;
             wrongSquare = clickedSquare;
         }
     }
@@ -111,8 +115,6 @@ else
                     gameOver = true;
                     await StopClocksAsync();
                 }
-                correctSquare = null;
-                wrongSquare = null;
                 StateHasChanged();
             }
         }

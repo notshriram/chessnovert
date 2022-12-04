@@ -33,29 +33,43 @@
 }
 
 .rank:nth-child(2n) .cell:nth-child(2n) {
-    background: #80708c;
+    background: var(--square-light);
 }
 
 .rank:nth-child(2n) .cell:nth-child(2n+1) {
-    background: #3a0647F0;
+    background: var(--square-dark);
     /*background: transparent;*/
 }
 
 .rank:nth-child(2n+1) .cell:nth-child(2n) {
-    background: #3a0647F0;
+    background: var(--square-dark);
     /*background: transparent;*/
 }
 
 .rank:nth-child(2n+1) .cell:nth-child(2n+1) {
-    background: #80708c;
+    background: var(--square-light);
 }
 
 .correct {
     background: var(--bs-success) !important;
-    transition: all 0.1s linear;
+    animation: highlight 0.75s;
+    animation-fill-mode: forwards;
 }
 
 .wrong {
     background: var(--warning) !important;
-    transition: all 0.1s linear;
+    animation: highlight 0.75s;
+    animation-fill-mode: forwards;
+}
+
+@keyframes highlight {
+    0% {
+        opacity: 0%
+    }
+    50% {
+        opacity: 100%
+    }
+    100% {
+        opacity: 0%;
+    }
 }
