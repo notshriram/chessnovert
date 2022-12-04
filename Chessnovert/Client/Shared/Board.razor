@@ -3,11 +3,6 @@
 @using Chessnovert.Shared.Chess.Enums
 @using Microsoft.AspNetCore.SignalR.Client
 
-<div class="d-flex justify-content-start gap-2">
-    <button @onclick="()=>MoveGenerationTest(2)">Test Moves</button>
-    <div>Current Move #@movenumber @movestring</div>
-</div>
-
 <div class="board">
     @for (int i = 0; i < 8; i++)
     {
@@ -39,9 +34,6 @@
 
 
 @code {
-    private string movestring = String.Empty;
-    private int movenumber = 0;
-
     // SignalR
     [Parameter]
     public HubConnection? HubConnection { get; set; }
@@ -144,9 +136,18 @@
                 Console.WriteLine($"{color} has run out of time");
                 OnGameOver.InvokeAsync("Timeout");
             });
-
         }
     }
+
+    //protected override async Task OnInitializedAsync()
+    //{
+    //    for (int i = 1; i <= 5; i++)
+    //    {
+    //        var numOfMoves = await MoveGenerationTest(i);
+    //        Console.WriteLine($"Depth {i} Ply: No. Of Moves {numOfMoves}");
+    //    }
+    //}
+
     protected void MoveToPosition(Coordinate position)
     {
         Console.WriteLine(position);
@@ -155,7 +156,7 @@
 
             if (TryMove(activePiece.Position, position))
             {
-                Console.WriteLine("legal");
+                //Console.WriteLine("legal");
 
                 // Check for Castle
                 if (activePiece.Value == 'K'
@@ -178,7 +179,7 @@
                 if (HubConnection != null)
                 {
                     HubConnection.SendAsync("Move", Game.Id, activePiece.Position, position, PlayerColor);
-                    Console.WriteLine("SendAsync Move");
+                    //Console.WriteLine("SendAsync Move");
                 }
 
                 Game.Moves.Add(new Move(activePiece.Position, position, activePiece.Color));
@@ -201,13 +202,13 @@
             else
             {
                 activePiece = null!;
-                Console.WriteLine("illegal");
+                //Console.WriteLine("illegal");
             }
         }
     }
     protected void OnMoveEvent(Coordinate source, Coordinate destination, TimeSpan remainingTime)
     {
-        Console.WriteLine("Move from " + source.Row + source.Col + " to " + destination.Row + destination.Col);
+        Console.WriteLine("Moved from " + source + " to " + destination);
         var sourcePiece = board[source.Row, source.Col];
         if (sourcePiece != null)
         {
@@ -233,7 +234,7 @@
                     else return;
 
                 }
-                Console.WriteLine("legal");
+                //Console.WriteLine("legal");
                 board[activePiece.Position.Row, activePiece.Position.Col] = null!;
                 activePiece.Position = destination;
                 board[destination.Row, destination.Col] = activePiece;
@@ -291,7 +292,7 @@
                 {
                     if (currentPiece.IsLegal(king.Position, board))
                     {
-                        Console.WriteLine($"{currentPiece.Color} {currentPiece.Name} can capture {color} King");
+                        //Console.WriteLine($"{currentPiece.Color} {currentPiece.Name} can capture {color} King");
                         return true;
                     }
                 }
@@ -309,7 +310,7 @@
         {
             if (sourcePiece.IsLegal(destination, board))
             {
-                Console.WriteLine("Pseudo Legal Check Passed");
+                //Console.WriteLine("Pseudo Legal Check Passed");
                 // make move
                 board[source.Row, source.Col] = null!;
                 sourcePiece.Position = destination;
@@ -320,7 +321,7 @@
                 }
                 else
                 {
-                    Console.WriteLine("King exposed to check");
+                    //Console.WriteLine("King exposed to check");
                 }
                 // unmake move
                 board[destination.Row, destination.Col] = destinationPiece;
@@ -426,7 +427,7 @@
             for (int j = 0; j < 8; j++)
             {
                 Coordinate source = new Coordinate(i, j);
-                if (board[i, j] != null && board[i,j].Color == currentTurn)
+                if (board[i, j] != null && board[i, j].Color == currentTurn)
                 {
                     for (int r = 0; r < 8; r++)
                         for (int c = 0; c < 8; c++)
@@ -441,17 +442,17 @@
 
     public async Task<int> MoveGenerationTest(int depth)
     {
-        if(depth == 0)
+        if (depth == 0)
         {
             return 1;
         }
         List<Move> moves = GenerateMoveList();
         int count = 0;
-        foreach( var move in moves )
+        foreach (var move in moves)
         {
             var source = move.Source;
             var destination = move.Destination;
-            Piece? sourcePiece = board[source.Row,source.Col];
+            Piece? sourcePiece = board[source.Row, source.Col];
             Piece? destinationPiece = board[destination.Row, destination.Col];
 
             //make move
@@ -459,20 +460,18 @@
             sourcePiece.Position = destination;
             board[destination.Row, destination.Col] = sourcePiece;
             currentTurn = currentTurn == Color.White ? Color.Black : Color.White;
-            movenumber++;
-            movestring = $"{source} {destination}";
-            StateHasChanged();
-
-            await Task.Delay(150);
-
+            //movenumber++;
+            //movestring = $"{source} {destination}";
+            //StateHasChanged();
+            //await Task.Delay(150);
             count += await MoveGenerationTest(depth - 1);
             // unmake move
             board[destination.Row, destination.Col] = destinationPiece;
             sourcePiece.Position = source;
             board[source.Row, source.Col] = sourcePiece;
             currentTurn = currentTurn == Color.White ? Color.Black : Color.White;
-            StateHasChanged();
-            await Task.Delay(150);
+            //StateHasChanged();
+            //await Task.Delay(150);
 
         }
         return count;

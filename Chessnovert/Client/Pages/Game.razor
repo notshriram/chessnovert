@@ -5,7 +5,7 @@
 
 @if (found != null)
 {
-    if (found == true)
+    if (found == true && game != null)
     {
         <div id="board-container">
             <div id="board">
@@ -17,6 +17,36 @@
             </div>
             <div id="black-infobar" class="@GetInfobarCssClass(Color.Black)" >
                 <PlayerInfoBar Time="@remainingTimeBlack"/>
+            </div>
+            <div id="game-info-panel" class="overflow-scroll"> 
+                <table class="table table-borderless table-hover">
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">White</th>
+                            <th scope="col">Black</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for(int i=0;i<game.Moves.Count;i+=2)
+                        {
+                            <tr>
+                                @if(i+1>=game.Moves.Count)
+                                {
+                                    <th scope="row">@(1 + @i / 2)</th>
+                                    <td colspan="2">@game.Moves[i].Source @game.Moves[i].Destination</td>
+                                }
+                                else
+                                {
+                                    <th scope="row">@(1 + @i/2)</th>
+                                    <td>@game.Moves[i].Source @game.Moves[i].Destination</td>
+                                    <td>@game.Moves[i+1].Source @game.Moves[i+1].Destination</td>
+                                }
+                            </tr>
+                            
+                        }
+                    </tbody>
+                </table>
             </div>
             <div id="white-infobar" class="@GetInfobarCssClass(Color.White)">
                 <PlayerInfoBar Time="@remainingTimeWhite" />

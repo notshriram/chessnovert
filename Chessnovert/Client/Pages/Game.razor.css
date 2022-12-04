@@ -6,6 +6,11 @@
     grid-area: board-area;
 }
 
+#game-info-panel {
+    grid-area: game-info-panel;
+    max-height: 50vh;
+}
+
 .top-infobar {
     grid-area: player-info-top;
     align-self: start;
@@ -23,12 +28,16 @@
             "board-area"
             "player-info-bottom"
     }
+    #game-info-panel {
+        display:none;
+    }
 }
 
 @media (min-width: 641px) {
     #board-container {
         grid-template-areas:
             "board-area player-info-top"
+            "board-area game-info-panel"
             "board-area player-info-bottom"
     }
 }
