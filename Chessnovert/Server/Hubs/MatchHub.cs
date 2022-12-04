@@ -1,4 +1,5 @@
 ﻿using Chessnovert.Services;
+using Chessnovert.Shared;
 using Chessnovert.Shared.Chess;
 using Chessnovert.Shared.Chess.Enums;
 using Microsoft.AspNetCore.SignalR;
@@ -9,10 +10,12 @@ namespace Chessnovert.Server.Hubs
     public class MatchHub : Hub
     {
         private readonly GameService gameService;
+        private readonly OpeningBookService openingBookService;
 
-        public MatchHub(GameService gameService)
+        public MatchHub(GameService gameService, OpeningBookService openingBookService)
         {
             this.gameService = gameService;
+            this.openingBookService = openingBookService;
         }
         public async Task JoinGame(Guid gameId)
         {
@@ -59,6 +62,22 @@ namespace Chessnovert.Server.Hubs
                 else
                 {
                     game.Moves.Add(move);
+
+                    // search for move in opening database
+                    // TODO: Build the string in the class itself (DRY principle)
+
+                    if (game.UCIstring.IsNullOrEmpty())
+                        game.UCIstring = move.Source.ToString().ToLower() + move.Destination.ToString().ToLower();
+                    else
+                        game.UCIstring += " " + move.Source.ToString().ToLower() + move.Destination.ToString().ToLower();
+                    
+                    //remove trailing spaces
+                    Opening? opening = openingBookService.GetFromUCI(game.UCIstring.Trim());
+                    if (opening != null)
+                    {
+                        game.Opening = opening;
+                        await Clients.Group(gameId.ToString()).SendAsync("Opening", opening);
+                    }
                     // TODO: source and destination parameters to be replaced with Move Class
                     TimeSpan remainingTime = game.TimeControl - sum;
                     await Clients.Client(Context.ConnectionId).SendAsync("Synchronize", remainingTime);

@@ -19,6 +19,12 @@
                 <PlayerInfoBar Time="@remainingTimeBlack"/>
             </div>
             <div id="game-info-panel" class="overflow-scroll"> 
+                @if(game.Opening!=null)
+                {
+                    <div class="px-2 w-75">
+                        @game.Opening.ECO : @game.Opening.Name
+                    </div>
+                }
                 <table class="table table-borderless table-hover">
                     <thead>
                         <tr>

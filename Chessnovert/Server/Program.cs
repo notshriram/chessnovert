@@ -24,6 +24,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 builder.Services.AddSingleton<GameService>();
+builder.Services.AddSingleton<OpeningBookService>();
 
 var app = builder.Build();
 

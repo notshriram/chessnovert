@@ -136,6 +136,11 @@
                 Console.WriteLine($"{color} has run out of time");
                 OnGameOver.InvokeAsync("Timeout");
             });
+
+            HubConnection.On<Opening>("Opening", (opening) =>
+            {
+                Game.Opening = opening;
+            });
         }
     }
 

@@ -16,6 +16,10 @@ namespace Chessnovert.Shared
         public DateTime CreatedAt { get; } = DateTime.Now;
         public TimeSpan TimeControl { get; set; }
         public List<Move> Moves { get; set; } = new();
+        public Opening? Opening { get; set; } = null;
+
+        public string UCIstring = "";
+     
 
     }
 }
