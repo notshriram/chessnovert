@@ -47,15 +47,38 @@
     <button class="btn btn-outline-primary" @onclick="CreateGame">Create Game</button>
 </div>
 
-<div>
-    @if (Games != null)
+<h5 class="py-3">Ongoing Games</h5>
+<div id="ongoing-games">
+    @if (Games!=null && Games.Count != 0)
     {
-        @foreach (Chessnovert.Shared.Game game in Games)
-        {
-            <div>
-                <a href="/game/@game.Id">@game.Id</a>
-            </div>
-        }
+        <table class="table table-hover table-borderless">
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">White</th>
+                    <th scope="col">Black</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (Chessnovert.Shared.Game game in Games)
+                {
+                    <tr @onclick="()=>navigateToGame(game.Id)">
+                        <th scope="row">
+                            @game.Id
+                        </th>
+                        <td>Alice</td>
+                        <td>Bob</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+    }
+    else
+    {
+        <p>
+            No ongoing games. Create one!
+        </p>
     }
 </div>
 @code {
@@ -95,5 +118,9 @@
                 Console.WriteLine("Failed to Create Game");
             }
         }
+    }
+    void navigateToGame(Guid gameId)
+    {
+        NavManager.NavigateTo($"/game/{gameId}");
     }
 }

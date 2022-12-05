@@ -18,11 +18,16 @@
             <div id="black-infobar" class="@GetInfobarCssClass(Color.Black)" >
                 <PlayerInfoBar Time="@remainingTimeBlack"/>
             </div>
-            <div id="game-info-panel" class="overflow-scroll"> 
+            <div id="game-info-panel" class="px-2"> 
                 @if(game.Opening!=null)
                 {
-                    <div class="px-2 w-75">
+                    <div class="text-sm-start">
                         @game.Opening.ECO : @game.Opening.Name
+                    </div>
+                }
+                else
+                {
+                    <div>
                     </div>
                 }
                 <table class="table table-borderless table-hover">
