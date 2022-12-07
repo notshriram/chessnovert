@@ -4,7 +4,7 @@ namespace Chessnovert.Shared.Chess
 {
     public class Pawn : Piece
     {
-        public Pawn(Color color, Coordinate position) : base(color,position)
+        public Pawn(Color color, Coordinate position) : base(color, position)
         {
         }
 
@@ -15,23 +15,47 @@ namespace Chessnovert.Shared.Chess
         public override bool CheckLegal(Coordinate destination, Piece[,] board)
         {
             Piece destinationPiece = board[destination.Row, destination.Col];
-            if(destinationPiece == null)
+            if (destinationPiece == null)
             {
-                if(destination.Col == Position.Col)
+                if (destination.Col == Position.Col)
                 {
-                    if(Color == Color.White)
+                    if (Color == Color.White)
                     {
-                        if(destination.Row == Position.Row + 1) return true;
-                        if((destination.Row == Position.Row + 2) && (Position.Row == 1))return true;
+                        if (destination.Row == Position.Row + 1) return true;
+                        // Double Step
+                        if (board[Position.Row + 1, Position.Col] == null)
+                            if ((destination.Row == Position.Row + 2) && (Position.Row == 1))
+                                return true;
+
                     }
-                    if(Color == Color.Black) 
+                    if (Color == Color.Black)
                     {
-                        if(destination.Row == Position.Row - 1) return true;
-                        if((destination.Row == Position.Row - 2) && (Position.Row == 6))return true;
+                        if (destination.Row == Position.Row - 1) return true;
+                        // Double Step
+                        if (board[Position.Row - 1, Position.Col] == null)
+                            if ((destination.Row == Position.Row - 2) && (Position.Row == 6)) 
+                                return true;
                     }
                 }
                 // TODO: en passant.
-                // else -> { en passant logic }
+                // else if absdiff == 1 -> { en passant logic }
+                else if (Math.Abs(destination.Col - Position.Col) == 1)
+                {
+                    // Opposite Coloured Pawn Stands Beside
+                    if (board[Position.Row, destination.Col] != null && board[Position.Row, destination.Col].Color != Color)
+                    {
+                        if (Color == Color.White && Position.Row == 4)
+                        {
+                            if (destination.Row == Position.Row + 1) return true;
+
+                        }
+                        if (Color == Color.Black && Position.Row == 3)
+                        {
+                            if (destination.Row == Position.Row - 1) return true;
+                        }
+
+                    }
+                }
             }
             else
             {

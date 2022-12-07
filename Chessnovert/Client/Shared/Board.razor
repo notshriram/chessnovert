@@ -34,6 +34,7 @@
 
 
 @code {
+
     // SignalR
     [Parameter]
     public HubConnection? HubConnection { get; set; }
@@ -55,6 +56,27 @@
     Piece activePiece = null!;
     Color currentTurn;
     int validMoves = 0;
+
+    public string movestring = "";
+    public int movenumber = 0;
+
+    async Task PrintMovesCount(int depth)
+    {
+        for (int i = 1; i <= depth; i++)
+        {
+            int count = await MoveGenerationTest(i);
+            Console.WriteLine($"Depth {i} : {count}");
+        }
+    }
+
+    //protected override async Task OnInitializedAsync()
+    //{
+    //    for (int i = 1; i <= 5; i++)
+    //    {
+    //        var numOfMoves = await MoveGenerationTest(i);
+    //        Console.WriteLine($"Depth {i} Ply: No. Of Moves {numOfMoves}");
+    //    }
+    //}
 
     protected override void OnInitialized()
     {
@@ -144,14 +166,6 @@
         }
     }
 
-    //protected override async Task OnInitializedAsync()
-    //{
-    //    for (int i = 1; i <= 5; i++)
-    //    {
-    //        var numOfMoves = await MoveGenerationTest(i);
-    //        Console.WriteLine($"Depth {i} Ply: No. Of Moves {numOfMoves}");
-    //    }
-    //}
 
     protected void MoveToPosition(Coordinate position)
     {
@@ -162,6 +176,44 @@
             if (TryMove(activePiece.Position, position))
             {
                 //Console.WriteLine("legal");
+                var source = activePiece.Position;
+                var destination = position;
+
+                var sourcePiece = board[source.Row, source.Col];
+                var destinationPiece = board[destination.Row, destination.Col];
+                bool isIllegal = true;
+                if (sourcePiece != null)
+                {
+                    if (sourcePiece.IsLegal(destination, board))
+                    {
+                        //Console.WriteLine("Pseudo Legal Check Passed");
+                        //Check for En Passant
+                        if (Game != null)
+                        {
+                            if (Game.Moves.Count != 0)
+                                if (sourcePiece.Value == 'P' && Math.Abs(destination.Col - source.Col) == 1)
+                                {
+                                    if (Game.Moves.Last().Destination.Row == source.Row)
+                                    {
+                                        var last = Game.Moves.Last();
+                                        Piece? lastMovedPiece = board[last.Destination.Row, last.Destination.Col];
+                                        if (lastMovedPiece == null)
+                                        {
+                                            throw new InvalidOperationException();
+                                        }
+
+                                        if (lastMovedPiece.Value == 'P')
+                                        {
+                                            if (TryMove(source, destination))
+                                            {
+                                                board[last.Destination.Row, last.Destination.Col] = null!;
+                                            }
+                                        }
+                                    }
+                                }
+                        }
+                    }
+                }
 
                 // Check for Castle
                 if (activePiece.Value == 'K'
@@ -316,6 +368,49 @@
             if (sourcePiece.IsLegal(destination, board))
             {
                 //Console.WriteLine("Pseudo Legal Check Passed");
+                //Check for En Passant
+                if (Game != null)
+                {
+                    if (Game.Moves.Count != 0)
+                        if (sourcePiece.Value == 'P' && Math.Abs(destination.Col - source.Col) == 1)
+                        {
+                            if (Game.Moves.Last().Destination.Row == source.Row)
+                            {
+                                var last = Game.Moves.Last();
+                                Piece? lastMovedPiece = board[last.Destination.Row, last.Destination.Col];
+                                if (lastMovedPiece == null)
+                                {
+                                    throw new InvalidOperationException();
+                                }
+
+                                if (lastMovedPiece.Value == 'P' && lastMovedPiece.Position.Col == destination.Col)
+                                {
+                                    board[last.Destination.Row, last.Destination.Col] = null!;
+                                    // make move
+                                    board[source.Row, source.Col] = null!;
+                                    sourcePiece.Position = destination;
+                                    board[destination.Row, destination.Col] = sourcePiece;
+                                    if (!IsKingInCheck(sourcePiece.Color))
+                                    {
+                                        isIllegal = false;
+                                    }
+                                    // unmake move
+                                    board[destination.Row, destination.Col] = destinationPiece;
+                                    sourcePiece.Position = source;
+                                    board[source.Row, source.Col] = sourcePiece;
+
+                                    board[last.Destination.Row, last.Destination.Col] = lastMovedPiece;
+                                    return !isIllegal;
+
+                                }
+                                else
+                                {
+                                    return false;
+                                }
+                            }
+                        }
+                }
+
                 // make move
                 board[source.Row, source.Col] = null!;
                 sourcePiece.Position = destination;
@@ -465,16 +560,25 @@
             sourcePiece.Position = destination;
             board[destination.Row, destination.Col] = sourcePiece;
             currentTurn = currentTurn == Color.White ? Color.Black : Color.White;
+
             //movenumber++;
             //movestring = $"{source} {destination}";
             //StateHasChanged();
             //await Task.Delay(150);
-            count += await MoveGenerationTest(depth - 1);
+
+            int localCount = await MoveGenerationTest(depth - 1);
+            count += localCount;
+
+            // function perft(k)
+            //if(depth==k)
+            //Console.WriteLine($"After {(source.ToString() + destination.ToString()).ToLower()} : {localCount}");
+
             // unmake move
             board[destination.Row, destination.Col] = destinationPiece;
             sourcePiece.Position = source;
             board[source.Row, source.Col] = sourcePiece;
             currentTurn = currentTurn == Color.White ? Color.Black : Color.White;
+
             //StateHasChanged();
             //await Task.Delay(150);
 
