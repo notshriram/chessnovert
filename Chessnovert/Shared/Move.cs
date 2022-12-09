@@ -12,6 +12,7 @@ namespace Chessnovert.Shared
     {
         public Coordinate Source { get; }
         public Coordinate Destination { get; }
+        public Piece? Displaced { get; set; }
         public Color Color { get; }
         public DateTime At { get; }
 
@@ -21,6 +22,14 @@ namespace Chessnovert.Shared
             Destination = destination;
             Color = color;
             At = DateTime.Now;
+        }
+        public Move(Coordinate source, Coordinate destination, Color color, Piece? displaced)
+        {
+            Source = source;
+            Destination = destination;
+            Color = color;
+            At = DateTime.Now;
+            Displaced = displaced;
         }
     }
 }
