@@ -13,6 +13,8 @@ namespace Chessnovert.Shared
         public Coordinate Source { get; }
         public Coordinate Destination { get; }
         public Piece? Displaced { get; set; }
+        public bool IsCastling { get; set; } = false;
+        public Piece? Promoted { get; set; }
         public Color Color { get; }
         public DateTime At { get; }
 
@@ -30,6 +32,15 @@ namespace Chessnovert.Shared
             Color = color;
             At = DateTime.Now;
             Displaced = displaced;
+        }
+        public Move(Coordinate source, Coordinate destination, Color color, Piece? displaced, bool isCastling)
+        {
+            Source = source;
+            Destination = destination;
+            Color = color;
+            At = DateTime.Now;
+            Displaced = displaced;
+            IsCastling = isCastling;
         }
     }
 }
