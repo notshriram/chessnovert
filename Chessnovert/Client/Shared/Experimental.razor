@@ -165,7 +165,7 @@
     protected override void OnInitialized()
     {
         PositionFromFEN("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ");
-
+        //PositionFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - ");
         base.OnInitialized();
 
         // Play all the moves that have occured upto this point
@@ -211,35 +211,6 @@
                 var destinationPiece = board[destination.Row, destination.Col];
                 if (sourcePiece != null)
                 {
-                    if (sourcePiece.IsLegal(destination, board))
-                    {
-                        //Console.WriteLine("Pseudo Legal Check Passed");
-                        //Check for En Passant
-                        if (Game != null)
-                        {
-                            if (Game.Moves.Count != 0)
-                                if (sourcePiece.Value == 'P' && Math.Abs(destination.Col - source.Col) == 1)
-                                {
-                                    if (Game.Moves.Last().Destination.Row == source.Row)
-                                    {
-                                        var last = Game.Moves.Last();
-                                        Piece? lastMovedPiece = board[last.Destination.Row, last.Destination.Col];
-                                        if (lastMovedPiece == null)
-                                        {
-                                            throw new InvalidOperationException();
-                                        }
-
-                                        if (lastMovedPiece.Value == 'P')
-                                        {
-                                            if (TryMove(source, destination))
-                                            {
-                                                board[last.Destination.Row, last.Destination.Col] = null!;
-                                            }
-                                        }
-                                    }
-                                }
-                        }
-                    }
                     Move move = new Move(activePiece.Position, position, activePiece.Color, board[destination.Row, destination.Col]);
                     MakeMove(move);
                     Game.Moves.Add(move);
@@ -364,6 +335,42 @@
         if (sourcePiece == null) return false;
         return (sourcePiece.Value == 'K' && (move.Destination.Row == move.Source.Row) && (Math.Abs(move.Destination.Col - move.Source.Col) == 2));
     }
+    private bool IsEnPassant(Move move)
+    {
+        Piece? sourcePiece = board[move.Source.Row, move.Source.Col];
+        Piece? destinationPiece = board[move.Destination.Row, move.Destination.Col];
+        if (sourcePiece == null) return false;
+
+        return (sourcePiece.Value == 'P' && Math.Abs(move.Source.Col - move.Destination.Col) == 1 && destinationPiece == null);
+    }
+    private bool CanEnPassant(Move move)
+    {
+        if (move.IsEnPassant) return true;
+        Piece? sourcePiece = board[move.Source.Row, move.Source.Col];
+        if (sourcePiece == null) return false;
+        if (sourcePiece.Value != 'P') return false;
+        // conditions for en passant
+        // 1. last move was a pawn move of two spaces
+        // 2. pawn is moving diagonally
+        // 3. destination is empty
+        // 4. source piece is a pawn
+        if (MoveStack.Count != 0)
+        {
+            Move last = MoveStack.Peek();
+            if (last.Destination.Row == move.Source.Row)
+            {
+                Piece? lastMovedPiece = board[last.Destination.Row, last.Destination.Col];
+                if (lastMovedPiece != null && board[move.Destination.Row, move.Destination.Col] == null)
+                {
+                    if(lastMovedPiece.Value == 'P' && (Math.Abs(last.Source.Row - last.Destination.Row) == 2))
+                    {
+                        return lastMovedPiece.Position.Col == move.Destination.Col;
+                    }
+                }
+            }
+        }
+        return false;
+    }
 
     protected bool TryMove(Coordinate source, Coordinate destination)
     {
@@ -375,53 +382,13 @@
             if (sourcePiece.IsLegal(destination, board))
             {
                 //Console.WriteLine($"{sourcePiece.Name} is Pseudo Legal from {sourcePiece.Position} to {destination}");
-                //Check for En Passant
-                if (MoveStack.Count != 0 && destinationPiece == null)
-                    if (sourcePiece.Value == 'P' && Math.Abs(destination.Col - source.Col) == 1)
-                    {
-                        Move last = MoveStack.Peek();
-                        if (last.Destination.Row == source.Row)
-                        {
-                            Piece? lastMovedPiece = board[last.Destination.Row, last.Destination.Col];
-                            if (lastMovedPiece == null)
-                            {
-                                throw new InvalidOperationException();
-                            }
-
-                            if (lastMovedPiece.Value == 'P' && (lastMovedPiece.Position.Col == destination.Col) && (Math.Abs(last.Source.Row - last.Destination.Row) == 2))
-                            {
-                                board[last.Destination.Row, last.Destination.Col] = null!;
-
-                                // make move
-                                board[source.Row, source.Col] = null!;
-                                sourcePiece.Position = destination;
-                                board[destination.Row, destination.Col] = sourcePiece;
-
-                                if (!IsKingInCheck(sourcePiece.Color))
-                                {
-                                    isIllegal = false;
-                                }
-                                // unmake move
-                                board[destination.Row, destination.Col] = destinationPiece!;
-                                sourcePiece.Position = source;
-                                board[source.Row, source.Col] = sourcePiece;
-
-                                board[last.Destination.Row, last.Destination.Col] = lastMovedPiece;
-                                return !isIllegal;
-
-                            }
-                            else
-                            {
-                                return false;
-                            }
-                        }
-                        else
-                        {
-                            return false;
-                        }
-                    }
-
+                
                 Move move = new Move(source, destination, currentTurn, destinationPiece);
+
+                if (IsEnPassant(move))
+                {
+                    if(!CanEnPassant(move)) return false;
+                }
 
                 if (IsCastling(move))
                     return CanCastle(sourcePiece, destination);
@@ -547,7 +514,16 @@
                             Coordinate destination = new Coordinate(r, c);
                             if (TryMove(source, destination))
                             {
-                                MoveList.Add(new Move(source, destination, board[i, j].Color, board[r, c]));
+                                //check for promotion
+                                if (board[i, j].Value == 'P' && (destination.Row == 0 || destination.Row == 7))
+                                {
+                                    MoveList.Add(new Move(source, destination, board[i, j].Color, board[r, c], new Queen(board[i,j].Color, destination)));
+                                    MoveList.Add(new Move(source, destination, board[i, j].Color, board[r, c], new Rook(board[i, j].Color, destination)));
+                                    MoveList.Add(new Move(source, destination, board[i, j].Color, board[r, c], new Bishop(board[i, j].Color, destination)));
+                                    MoveList.Add(new Move(source, destination, board[i, j].Color, board[r, c], new Knight(board[i, j].Color, destination)));
+                                }
+                                else
+                                    MoveList.Add(new Move(source, destination, board[i, j].Color, board[r, c]));
                             }
                         }
                 }
@@ -589,14 +565,33 @@
         }
         return count;
     }
+    public bool IsPromotion(Move move)
+    {
+        if(move.Promoted != null)
+            return true;
+        if(board[move.Source.Row, move.Source.Col].Value == 'P' && (move.Destination.Row == 0 || move.Destination.Row == 7))
+        {
+            // TODO: Add Modal Dialog to select piece to promote to.
+            move.Promoted = new Queen(move.Color, move.Destination);
+            return true;
+        }
+        return false;
+    }
 
     public void MakeMove(Move move)
     {
+        MoveStack.Push(move);
         Piece? sourcePiece = board[move.Source.Row, move.Source.Col];
-        Piece? destinationPiece = board[move.Destination.Row, move.Destination.Col];
-
         //Console.WriteLine($"Making move {sourcePiece.Name}{move.Source}{move.Destination}");
-
+        // en passant
+        if (CanEnPassant(move))
+        {
+            move.IsEnPassant = true;
+            int direction = move.Color == Color.White ? 1 : -1;
+            Piece? capturedPiece = board[move.Destination.Row - direction, move.Destination.Col];
+            board[capturedPiece!.Position.Row, capturedPiece.Position.Col] = null!;
+            move.Displaced = capturedPiece;
+        }
         // castling
         if (IsCastling(move))
         {
@@ -618,12 +613,20 @@
             //Console.WriteLine($"Rook Castle destination {rookDestination}");
         }
 
-        //make move
-        board[move.Source.Row, move.Source.Col] = null!;
-        sourcePiece.Position = move.Destination;
-        board[move.Destination.Row, move.Destination.Col] = sourcePiece;
+        // promotion
+        if(IsPromotion(move))
+        {
+            board[move.Source.Row, move.Source.Col] = null!;
+            board[move.Destination.Row, move.Destination.Col] = move.Promoted;
+            //Console.WriteLine($"Promotion {move.Promoted.Name}");
+        }
+        else{
+            //make move
+            board[move.Source.Row, move.Source.Col] = null!;
+            sourcePiece.Position = move.Destination;
+            board[move.Destination.Row, move.Destination.Col] = sourcePiece;
+        }
 
-        MoveStack.Push(move);
         //set castling rights
         bool[] castlingRights = CastlingRightsStack.Peek().ToArray();
         if (sourcePiece.Value == 'K')
@@ -673,9 +676,16 @@
             throw new Exception();
         }
 
-
-
         //Console.WriteLine($"Unmaking move {sourcePiece.Name}{move.Source}{move.Destination}");
+
+        // en passant
+        if (move.IsEnPassant)
+        {
+            //Console.WriteLine($"Unmaking en passant {move.Source}{move.Destination} with captured = {move.Displaced!}");
+            Piece? capturedPiece = move.Displaced;
+            board[capturedPiece!.Position.Row, capturedPiece.Position.Col] = capturedPiece;
+            move.Displaced = null;
+        }
 
         // castling
         if (IsCastling(move))
@@ -685,13 +695,20 @@
 
             Coordinate rookDestination = new Coordinate(move.Source.Row, move.Destination.Col + direction);
             if (direction == 1)
-            {
+            { 
                 rookDestination = new Coordinate(move.Source.Row, 7);
             }
             board[rook.Position.Row, rook.Position.Col] = null!;
             rook.Position = rookDestination;
             board[rookDestination.Row, rookDestination.Col] = rook;
             //Console.WriteLine($"Rook Uncastle destination {rookDestination}");
+        }
+
+        // promotion
+        if (move.Promoted!=null)
+        {
+            board[move.Destination.Row, move.Destination.Col] = null!;
+            sourcePiece = new Pawn(move.Color, move.Source);
         }
 
         board[move.Destination.Row, move.Destination.Col] = move.Displaced!;
