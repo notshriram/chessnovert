@@ -46,11 +46,15 @@
     Piece activePiece = null!;
     Color currentTurn;
     int validMoves = 0;
+    int HalfMoveClock = 0;
+    int FullMoveCounter = 1;
+    // Castling Rights KQkq
 
     public string movestring = "";
     public int movenumber = 0;
 
     public Stack<Move> MoveStack = new();
+    public Stack<bool[]> CastlingRightsStack = new();
 
     async Task PrintMovesCount(int depth, bool singlePass)
     {
@@ -107,6 +111,10 @@
     public void PositionFromFEN(string FEN)
     {
         string[] fen = FEN.Split(' ');
+        foreach (var i in fen)
+        {
+            Console.WriteLine(i);
+        }
         string[] rows = fen[0].Split('/');
         for (int i = 0; i < 8; i++)
         {
@@ -127,6 +135,30 @@
             }
         }
         currentTurn = fen[1] == "w" ? Color.White : Color.Black;
+
+        var castlingRights = new bool[4] { false, false, false, false };
+        if (fen[2].Contains('K'))
+            castlingRights[0] = true;
+        if (fen[2].Contains('Q'))
+            castlingRights[1] = true;
+        if (fen[2].Contains('k'))
+            castlingRights[2] = true;
+        if (fen[2].Contains('q'))
+            castlingRights[3] = true;
+        
+        CastlingRightsStack.Push(castlingRights);
+
+        // TODO: en passant
+
+        if(fen.Length > 4 && int.TryParse(fen[4], out int halfMoveClock))
+        {
+            HalfMoveClock = halfMoveClock;
+        }
+        if (fen.Length > 5 && int.TryParse(fen[5], out int fullMoveCounter))
+        {
+            FullMoveCounter = fullMoveCounter;
+        }
+
         validMoves = CountValidMoves(currentTurn);
     }
 
@@ -422,6 +454,43 @@
         {
             return false;
         }
+        // check castling rights
+        if (king.Color == Color.White)
+        {
+
+            if (destination.Col == 1)
+            {
+                if (!CastlingRightsStack.Peek()[0])
+                {
+                    return false;
+                }
+            }
+            else if (destination.Col == 5)
+            {
+                if (!CastlingRightsStack.Peek()[1])
+                {
+                    return false;
+                }
+            }
+        }
+        else
+        {
+            if (destination.Col == 1)
+            {
+                if (!CastlingRightsStack.Peek()[2])
+                {
+                    return false;
+                }
+            }
+            else if (destination.Col == 5)
+            {
+                if (!CastlingRightsStack.Peek()[3])
+                {
+                    return false;
+                }
+            }
+
+        }
 
         int direction = king.Position.Col > destination.Col ? -1 : 1;
 
@@ -555,6 +624,39 @@
         board[move.Destination.Row, move.Destination.Col] = sourcePiece;
 
         MoveStack.Push(move);
+        //set castling rights
+        bool[] castlingRights = CastlingRightsStack.Peek().ToArray();
+        if (sourcePiece.Value == 'K')
+        {
+            if (sourcePiece.Color == Color.White)
+            {
+                castlingRights[0] = false;
+                castlingRights[1] = false;
+            }
+            else
+            {
+                castlingRights[2] = false;
+                castlingRights[3] = false;
+            }
+        }
+        else if (sourcePiece.Value == 'R')
+        {
+            if (sourcePiece.Color == Color.White)
+            {
+                if (sourcePiece.Position.Col == 0)
+                    castlingRights[0] = false;
+                else if (sourcePiece.Position.Col == 7)
+                    castlingRights[1] = false;
+            }
+            else
+            {
+                if (sourcePiece.Position.Col == 0)
+                    castlingRights[2] = false;
+                else if (sourcePiece.Position.Col == 7)
+                    castlingRights[3] = false;
+            }
+        }
+        CastlingRightsStack.Push(castlingRights);
         currentTurn = currentTurn == Color.White ? Color.Black : Color.White;
 
     }
@@ -568,7 +670,10 @@
         {
             Console.WriteLine($"Error while unmoving {move.Source}{move.Destination} with isCastling {move.IsCastling} and captured = {move.Displaced!=null}");
             Console.WriteLine($"Null sourcepiece on {move.Destination}");
+            throw new Exception();
         }
+
+
 
         //Console.WriteLine($"Unmaking move {sourcePiece.Name}{move.Source}{move.Destination}");
 
@@ -594,6 +699,7 @@
         board[move.Source.Row, move.Source.Col] = sourcePiece;
 
         MoveStack.Pop();
+        CastlingRightsStack.Pop();
         currentTurn = currentTurn == Color.White ? Color.Black : Color.White;
     }
 }

@@ -24,21 +24,23 @@ namespace Chessnovert.Shared.Chess
             {
                 return true;
             }
-            //TODO: Add Castling
+            // Castling
             if (Color == Color.White && colDifference == 2 && rowDifference == 0 && destination.Row == 0)
             {
                 // check rook is home
+                // direction is -1 if KingSide, 1 if QueenSide
                 int direction = destination.Col < Position.Col ? -1 : 1;
                 int rookColumn = direction == -1 ? 0 : 7;
                 Piece rook = board[0, rookColumn];
                 if (rook == null) return false;
                 if (rook.Value != 'R') return false;
                 // check rook is in Line of Sight
-                for (int i = Position.Col + direction; i != destination.Col; i += direction)
+                for (int i = Position.Col + direction; i != rookColumn; i += direction)
                 {
                     if (board[Position.Row, i] != null) return false;
                 }
-                return true;
+                // King Must be in correct Column
+                return Position.Col == 3;
             }
             else if (Color == Color.Black && colDifference == 2 && rowDifference == 0 && destination.Row == 7)
             {
@@ -50,11 +52,13 @@ namespace Chessnovert.Shared.Chess
                 if (rook == null) return false;
                 if (rook.Value != 'R') return false;
                 // check rook is in Line of Sight
-                for (int i = Position.Col + direction; i != destination.Col; i += direction)
+                for (int i = Position.Col + direction; i != rookColumn; i += direction)
                 {
                     if (board[Position.Row, i] != null) return false;
                 }
-                return true;
+
+                // King Must be in correct Column
+                return  Position.Col == 3;
             }
             return false;
         }
