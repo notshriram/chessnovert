@@ -37,12 +37,14 @@ namespace Chessnovert.Shared.Chess
                                 return true;
                     }
                 }
-                // TODO: en passant.
-                // else if absdiff == 1 -> { en passant logic }
+                // en passant.
+                // absdiff == 1 -> { en passant logic }
                 else if (Math.Abs(destination.Col - Position.Col) == 1)
                 {
                     // Opposite Coloured Pawn Stands Beside
-                    if (board[Position.Row, destination.Col] != null && board[Position.Row, destination.Col].Color != Color)
+                    if (board[Position.Row, destination.Col] != null 
+                        && board[Position.Row, destination.Col].Value=='P' 
+                        && board[Position.Row, destination.Col].Color != Color)
                     {
                         if (Color == Color.White && Position.Row == 4)
                         {
