@@ -118,3 +118,9 @@
     background-image: url('css/assets/kosal/white_queen.svg');
 
 }
+
+.lastmove {
+    background-color: rgb(65, 123, 98) !important;
+    box-shadow: inset 0 0 10px 1px rgb(65, 123, 98);
+    transition: all 0.1s linear;
+}

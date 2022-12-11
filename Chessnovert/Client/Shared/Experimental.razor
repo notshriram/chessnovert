@@ -14,12 +14,18 @@
                 Piece? piece = board[Row, Col];
                 Coordinate position = new Coordinate { Row = Row, Col = Col };
 
+                bool isLastMove = Game.Moves != null
+                                     && Game.Moves.Count > 0 
+                                     && (Game.Moves[^1].Source == position || Game.Moves[^1].Destination == position);
+                
+
                 bool isValid = false;
                 if (activePiece != null)
                 {
                     isValid = TryMove(activePiece.Position, position);
                 }
-                <div @onclick="()=>MoveToPosition(position)" class="cell @(isValid?"valid":"")">
+                
+                <div @onclick="()=>MoveToPosition(position)" class="cell @(isValid?"valid":"") @(isLastMove?"lastmove":"")">
                     @if (piece != null)
                     {
                         <div @onclick="()=>SelectPiece(piece)"
