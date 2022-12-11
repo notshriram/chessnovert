@@ -301,6 +301,7 @@
         foreach (var m in MoveList)
         {
             MakeMove(m);
+            searchCount++;
             int score = -Search(depth-1,-100000,100000);
             UnmakeMove(m);
             if (score > bestScore)
@@ -314,6 +315,8 @@
         {
             Console.WriteLine("Computer move is null");
         }
+        Console.WriteLine("Search Count: " + searchCount);
+        searchCount = 0;
         return move;
     }
 
@@ -613,6 +616,8 @@
                         }
                 }
             }
+        
+        // order moves
         return MoveList;
     }
 
@@ -865,6 +870,7 @@
         return best;
     }
 
+    public int searchCount = 0;
     public int Search(int depth, int alpha, int beta)
     {
         if (depth == 0)
@@ -877,7 +883,7 @@
         {
             if (IsKingInCheck(currentTurn))
             {
-                return int.MinValue;
+                return -1000000;
             }
             else
             {
@@ -887,6 +893,7 @@
         foreach (Move move in moves)
         {
             MakeMove(move);
+            searchCount++;
             int score = -Search(depth - 1, -beta, -alpha);
             UnmakeMove(move);
             if (score >= beta)

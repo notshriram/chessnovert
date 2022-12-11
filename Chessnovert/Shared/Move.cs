@@ -18,7 +18,7 @@ namespace Chessnovert.Shared
         public Piece? Promoted { get; set; }
         public Color Color { get; }
         public DateTime At { get; }
-
+        public int Score { get; set; } = 0;
         public Move(Coordinate source, Coordinate destination, Color color)
         {
             Source = source;
