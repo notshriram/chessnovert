@@ -12,6 +12,8 @@ namespace Chessnovert.Shared.Chess
 
         public override string Name => "Rook";
 
+        public override int Weight => 5;
+
         public override bool CheckLegal(Coordinate destination, Piece[,] board)
         {
             if (Position.Row == destination.Row)

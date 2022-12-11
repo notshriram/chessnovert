@@ -57,7 +57,7 @@ else
     private readonly CancellationTokenSource _cts = new();
     private TimeSpan remainingTime = TimeSpan.FromSeconds(30);
 
-    private Coordinate targetSquare;
+    private Coordinate? targetSquare;
     private Coordinate? correctSquare = null;
     private Coordinate? wrongSquare = null;
     private int score = 0;

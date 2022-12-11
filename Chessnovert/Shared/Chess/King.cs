@@ -12,6 +12,8 @@ namespace Chessnovert.Shared.Chess
 
         public override string Name => "King";
 
+        public override int Weight => 0;
+
         public override bool CheckLegal(Coordinate destination, Piece[,] board)
         {
             // Difference between Rows <= 1

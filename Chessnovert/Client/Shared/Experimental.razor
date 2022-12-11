@@ -2,6 +2,7 @@
 @using Chessnovert.Shared.Chess
 @using Chessnovert.Shared.Chess.Enums
 @using Microsoft.AspNetCore.SignalR.Client
+@using Chessnovert.Services
 
 <div class="board">
     @for (int i = 0; i < 8; i++)
@@ -30,13 +31,14 @@
             }
         </div>
     }
-</div>
 
-<button class="btn btn-dark" @onclick="()=>PrintMovesCount(searchDepth, true)">Move Generation Test</button>
+</div>
+<div class="p-2">Eval @Evaluate()</div>
 
 @code {
-
+    public int promotionsCount = 0;
     public int searchDepth = 1;
+
     public Chessnovert.Shared.Game Game { get; set; } = new();
 
     [Parameter]
@@ -64,6 +66,17 @@
             Console.WriteLine($"\nNodes searched: {count}");
         }
         searchDepth++;
+        Console.WriteLine($"Promotions Count: {promotionsCount}");
+        promotionsCount=0;
+    }
+
+    async Task PlayBot()
+    {
+        await Task.Delay(1000);
+        Move? move = ComputerMove();
+        if(move != null)
+            MakeMove(move);
+        StateHasChanged();
     }
 
     //protected override async Task OnInitializedAsync()
@@ -164,8 +177,20 @@
 
     protected override void OnInitialized()
     {
-        PositionFromFEN("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ");
-        //PositionFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - ");
+        //Pos 5 verified to depth 4
+        //PositionFromFEN("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8 ");
+
+        //Pos 4 verified to depth 5
+        //PositionFromFEN("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1");
+        
+        //Pos 3 failing depth 5 (shows 20 extra promotions)
+        //PositionFromFEN("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - ");
+    
+        //kiwipete failing at depth 4
+        //PositionFromFEN("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ");
+        
+        //Position 1 verified to depth 4
+        PositionFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - ");
         base.OnInitialized();
 
         // Play all the moves that have occured upto this point
@@ -194,6 +219,29 @@
 
     }
 
+    protected async Task PlayComputerMove()
+    {
+            await Task.Delay(100);
+            // play computer move
+            var computerMove = ComputerMove();
+            if (computerMove != null)
+            {
+                MakeMove(computerMove);
+                Game.Moves.Add(computerMove);
+                Console.WriteLine($"It's {currentTurn}'s turn");
+                validMoves = CountValidMoves(currentTurn);
+                if (validMoves == 0)
+                {
+                    Console.WriteLine("Checkmate");
+                }
+
+            }
+            else
+            {
+                Console.WriteLine("Stalemate");
+            }
+            StateHasChanged();
+    }
 
     protected void MoveToPosition(Coordinate position)
     {
@@ -221,6 +269,10 @@
                     {
                         Console.WriteLine("Checkmate");
                     }
+                    else
+                    {
+                        PlayComputerMove();
+                    }
                 }
             }
             else if (position == activePiece.Position)
@@ -233,7 +285,39 @@
                 //Console.WriteLine("illegal");
             }
         }
+
     }
+
+    public Move? ComputerMove()
+    {
+        int depth = 4;
+        var MoveList = GenerateMoveList();
+        if (MoveList.Count == 0)
+        {
+            return null;
+        }
+        // find the best move
+        Move? move = null;
+        int bestScore = int.MinValue;
+        foreach (var m in MoveList)
+        {
+            MakeMove(m);
+            int score = -Search(depth-1,-100000,100000);
+            UnmakeMove(m);
+            if (score > bestScore)
+            {
+                Console.WriteLine("Score: " + score + " Move: " + m.Source + " " + m.Destination );
+                bestScore = score;
+                move = m;
+            }
+        }
+        if (move == null)
+        {
+            Console.WriteLine("Computer move is null");
+        }
+        return move;
+    }
+
     protected void OnMoveEvent(Coordinate source, Coordinate destination, TimeSpan remainingTime)
     {
         Console.WriteLine("Moved from " + source + " to " + destination);
@@ -337,6 +421,7 @@
     }
     private bool IsEnPassant(Move move)
     {
+        if (move.IsEnPassant) return true;
         Piece? sourcePiece = board[move.Source.Row, move.Source.Col];
         Piece? destinationPiece = board[move.Destination.Row, move.Destination.Col];
         if (sourcePiece == null) return false;
@@ -516,7 +601,8 @@
                             {
                                 //check for promotion
                                 if (board[i, j].Value == 'P' && (destination.Row == 0 || destination.Row == 7))
-                                {
+                                {   
+                                    promotionsCount+=4;
                                     MoveList.Add(new Move(source, destination, board[i, j].Color, board[r, c], new Queen(board[i,j].Color, destination)));
                                     MoveList.Add(new Move(source, destination, board[i, j].Color, board[r, c], new Rook(board[i, j].Color, destination)));
                                     MoveList.Add(new Move(source, destination, board[i, j].Color, board[r, c], new Bishop(board[i, j].Color, destination)));
@@ -572,7 +658,10 @@
         if(board[move.Source.Row, move.Source.Col].Value == 'P' && (move.Destination.Row == 0 || move.Destination.Row == 7))
         {
             // TODO: Add Modal Dialog to select piece to promote to.
-            move.Promoted = new Queen(move.Color, move.Destination);
+            if(move.Promoted is null){
+                move.Promoted = new Rook(move.Color, move.Destination);
+            }
+            //move.Promoted = new Queen(move.Color, move.Destination);
             return true;
         }
         return false;
@@ -580,11 +669,10 @@
 
     public void MakeMove(Move move)
     {
-        MoveStack.Push(move);
         Piece? sourcePiece = board[move.Source.Row, move.Source.Col];
         //Console.WriteLine($"Making move {sourcePiece.Name}{move.Source}{move.Destination}");
         // en passant
-        if (CanEnPassant(move))
+        if (IsEnPassant(move))
         {
             move.IsEnPassant = true;
             int direction = move.Color == Color.White ? 1 : -1;
@@ -616,16 +704,16 @@
         // promotion
         if(IsPromotion(move))
         {
-            board[move.Source.Row, move.Source.Col] = null!;
-            board[move.Destination.Row, move.Destination.Col] = move.Promoted;
-            //Console.WriteLine($"Promotion {move.Promoted.Name}");
+            sourcePiece = move.Promoted!;
+            //Console.WriteLine($"Promotion {move.Promoted!.Name}");
         }
-        else{
-            //make move
-            board[move.Source.Row, move.Source.Col] = null!;
-            sourcePiece.Position = move.Destination;
-            board[move.Destination.Row, move.Destination.Col] = sourcePiece;
-        }
+
+        //make move
+        board[move.Source.Row, move.Source.Col] = null!;
+        sourcePiece.Position = move.Destination;
+        board[move.Destination.Row, move.Destination.Col] = sourcePiece;
+
+        MoveStack.Push(move);
 
         //set castling rights
         bool[] castlingRights = CastlingRightsStack.Peek().ToArray();
@@ -705,7 +793,7 @@
         }
 
         // promotion
-        if (move.Promoted!=null)
+        if (move.Promoted is not null)
         {
             board[move.Destination.Row, move.Destination.Col] = null!;
             sourcePiece = new Pawn(move.Color, move.Source);
@@ -719,4 +807,99 @@
         CastlingRightsStack.Pop();
         currentTurn = currentTurn == Color.White ? Color.Black : Color.White;
     }
+
+    public int Evaluate()
+    {
+        int score = 0;
+        for (int row = 0; row < 8; row++)
+        {
+            for (int col = 0; col < 8; col++)
+            {
+                Piece? piece = board[row, col];
+                if (piece != null)
+                {
+                    Color color = currentTurn;
+                    if (piece.Color == color)
+                    {
+                        score += piece.Weight;
+                    }
+                    else
+                    {
+                        score -= piece.Weight;
+                    }
+                }
+            }
+        }
+        return score;
+    }
+
+    public int Search(int depth)
+    {
+        if (depth == 0)
+        {
+            return Evaluate();
+        }
+
+        List<Move> moves = GenerateMoveList();
+        if (moves.Count == 0)
+        {
+            if (IsKingInCheck(currentTurn))
+            {
+                return int.MinValue;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+        int best = int.MinValue;
+        foreach (Move move in moves)
+        {
+            MakeMove(move);
+            int score = -Search(depth - 1);
+            UnmakeMove(move);
+            if (score > best)
+            {
+                best = score;
+            }
+        }
+        return best;
+    }
+
+    public int Search(int depth, int alpha, int beta)
+    {
+        if (depth == 0)
+        {
+            return Evaluate();
+        }
+
+        List<Move> moves = GenerateMoveList();
+        if (moves.Count == 0)
+        {
+            if (IsKingInCheck(currentTurn))
+            {
+                return int.MinValue;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+        foreach (Move move in moves)
+        {
+            MakeMove(move);
+            int score = -Search(depth - 1, -beta, -alpha);
+            UnmakeMove(move);
+            if (score >= beta)
+            {
+                return beta;
+            }
+            if (score > alpha)
+            {
+                alpha = score;
+            }
+        }
+        return alpha;
+    }
+
 }

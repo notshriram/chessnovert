@@ -12,6 +12,8 @@ namespace Chessnovert.Shared.Chess
 
         public override string Name => "Pawn";
 
+        public override int Weight => 1;
+
         public override bool CheckLegal(Coordinate destination, Piece[,] board)
         {
             Piece destinationPiece = board[destination.Row, destination.Col];

@@ -10,7 +10,7 @@ namespace Chessnovert.Shared.Chess
             Position = position;
         }
         public abstract char Value { get; }
-
+        public abstract int Weight { get; }
         public abstract string Name { get; }
         public Color Color { get; }
 

@@ -12,6 +12,8 @@ namespace Chessnovert.Shared.Chess
 
         public override string Name => "Bishop";
 
+        public override int Weight => 3;
+        
         public override bool CheckLegal(Coordinate destination, Piece[,] board)
         {
             // Diagon Alley
