@@ -1,11 +1,7 @@
 ﻿@using Chessnovert.Shared
 @using Chessnovert.Shared.Chess
 @using Chessnovert.Shared.Chess.Enums
-@using Microsoft.AspNetCore.SignalR.Client
-@if(@Game.Opening != null)
-{
-    <div>@Game.Opening.Name</div>
-}
+
 <div class="board">
     @for (int i = 0; i < 8; i++)
     {
@@ -41,13 +37,16 @@
     }
 
 </div>
-<div class="p-2">Eval @Evaluate()</div>
 
 @code {
     public int promotionsCount = 0;
     public int searchDepth = 1;
 
-    public Chessnovert.Shared.Game Game { get; set; } = new();
+    [Parameter]
+    public EventCallback OnChangeHook { get; set; }
+
+    [Parameter]
+    public Chessnovert.Shared.Game Game { get; set; }
 
     [Parameter]
     public Color? PlayerColor { get; set; }
@@ -86,6 +85,7 @@
         if(move != null)
             MakeMove(move);
         StateHasChanged();
+        await OnChangeHook.InvokeAsync();
     }
 
     private async Task readTsv()
@@ -287,12 +287,14 @@
                 if (opening != null)
                 {
                     Game.Opening = opening;
+                    OnChangeHook.InvokeAsync();
                 }
 
                 Console.WriteLine($"It's {currentTurn}'s turn");
                 validMoves = CountValidMoves(currentTurn);
                 if (validMoves == 0)
                 {
+                    Console.WriteLine(Game.UCIstring);
                     Console.WriteLine("Checkmate");
                 }
 
@@ -333,6 +335,7 @@
                     if (opening != null)
                     {
                         Game.Opening = opening;
+                        OnChangeHook.InvokeAsync();
                     }
                     activePiece = null!;
                     Console.WriteLine($"It's {currentTurn}'s turn");
@@ -357,7 +360,7 @@
                 //Console.WriteLine("illegal");
             }
         }
-
+        OnChangeHook.InvokeAsync();
     }
     public Move UCItoMove(string uci)
     {
@@ -386,7 +389,7 @@
             return moveFromUCI;
         }
         //if opening found in opening book, play the next move
-        Opening? opening = openings.FirstOrDefault(o => o.UCI.Contains(Game.UCIstring.Trim()));
+        Opening? opening = openings.FirstOrDefault(o => o.UCI.StartsWith(Game.UCIstring.Trim()));
         if(opening != null)
         {
             string[] uciMoves = opening.UCI.Split(" ");
