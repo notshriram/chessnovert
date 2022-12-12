@@ -2,7 +2,10 @@
 @using Chessnovert.Shared.Chess
 @using Chessnovert.Shared.Chess.Enums
 @using Microsoft.AspNetCore.SignalR.Client
-
+@if(@Game.Opening != null)
+{
+    <div>@Game.Opening.Name</div>
+}
 <div class="board">
     @for (int i = 0; i < 8; i++)
     {
@@ -60,6 +63,7 @@
     public string movestring = "";
     public int movenumber = 0;
 
+    public List<Opening> openings = new();
     public Stack<Move> MoveStack = new();
     public Stack<bool[]> CastlingRightsStack = new();
 
@@ -84,14 +88,53 @@
         StateHasChanged();
     }
 
-    //protected override async Task OnInitializedAsync()
-    //{
-    //    for (int i = 1; i <= 5; i++)
-    //    {
-    //        var numOfMoves = await MoveGenerationTest(i);
-    //        Console.WriteLine($"Depth {i} Ply: No. Of Moves {numOfMoves}");
-    //    }
-    //}
+    private async Task readTsv()
+    {
+        HttpClient Http = new HttpClient();
+        Http.BaseAddress = new Uri("https://localhost:7258/");
+        List<string> files = new List<string>() { "a.tsv", "b.tsv", "c.tsv", "d.tsv", "e.tsv" };
+        int rowCount = 0;
+        foreach (string file in files)
+        {
+            string absolutePath = "openings/" + file;
+            Stream? st = await Http.GetStreamAsync(absolutePath);
+            StreamReader reader = new StreamReader(st);
+            string? line = "";
+            while ((line = reader.ReadLine()) != null)
+            {
+                string[] tsv = line.Split(new char[] { '\t' }).ToArray();
+                //remove any end spaces from data
+                tsv = tsv.Select(x => x.Trim()).ToArray();
+
+                if (rowCount == 0)
+                {
+                    foreach (string colName in tsv)
+                    {
+                        Console.WriteLine(colName, typeof(string));
+                    }
+                    rowCount++;
+                }
+                else
+                {
+                    rowCount++;
+                    var ECO = tsv[0];
+                    var Name = tsv[1];
+                    var PGN = tsv[2];
+                    var UCI = tsv[3];
+                    var EPD = tsv[4];
+                    openings.Add(new Opening( ECO, Name, PGN, UCI, EPD));
+                }
+
+            }
+        }
+        Console.WriteLine($"Total Openings {openings.Count}");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await readTsv();
+    }
 
     private Piece? PieceFromChar(char c, Coordinate position)
     {
@@ -233,6 +276,19 @@
             {
                 MakeMove(computerMove);
                 Game.Moves.Add(computerMove);
+
+                if (Game.UCIstring==null || Game.UCIstring == "")
+                    Game.UCIstring = computerMove.Source.ToString().ToLower() + computerMove.Destination.ToString().ToLower();
+                else
+                    Game.UCIstring += " " + computerMove.Source.ToString().ToLower() + computerMove.Destination.ToString().ToLower();
+                
+                //remove trailing spaces
+                Opening? opening = openings.FirstOrDefault(o => o.UCI == Game.UCIstring.Trim());
+                if (opening != null)
+                {
+                    Game.Opening = opening;
+                }
+
                 Console.WriteLine($"It's {currentTurn}'s turn");
                 validMoves = CountValidMoves(currentTurn);
                 if (validMoves == 0)
@@ -267,6 +323,17 @@
                     Move move = new Move(activePiece.Position, position, activePiece.Color, board[destination.Row, destination.Col]);
                     MakeMove(move);
                     Game.Moves.Add(move);
+                    if (Game.UCIstring==null || Game.UCIstring == "")
+                        Game.UCIstring = move.Source.ToString().ToLower() + move.Destination.ToString().ToLower();
+                    else
+                        Game.UCIstring += " " + move.Source.ToString().ToLower() + move.Destination.ToString().ToLower();
+                    
+                    //remove trailing spaces
+                    Opening? opening = openings.FirstOrDefault(o => o.UCI == Game.UCIstring.Trim());
+                    if (opening != null)
+                    {
+                        Game.Opening = opening;
+                    }
                     activePiece = null!;
                     Console.WriteLine($"It's {currentTurn}'s turn");
                     validMoves = CountValidMoves(currentTurn);
@@ -292,9 +359,47 @@
         }
 
     }
-
+    public Move UCItoMove(string uci)
+    {
+        int col = uci[0] - 'a';
+        int row = 8 - (uci[1] - '0');
+        Coordinate source = new Coordinate(7-row, 7-col);
+        col = uci[2] - 'a';
+        row = 8 - (uci[3] - '0');
+        Coordinate destination = new Coordinate(7-row, 7-col);
+        return new Move(source, destination, currentTurn, board[destination.Row, destination.Col]);
+    }
     public Move? ComputerMove()
     {
+        // first few moves get from opening book
+        if(Game.Moves.Count == 0)
+        {
+            //choose random opening
+            Random rnd = new Random();
+            int openingIndex = rnd.Next(openings.Count);
+            Opening randomOpening = openings[openingIndex];
+            Console.WriteLine(randomOpening.Name);
+            // Generate first move from opening
+            string[] uciMoves = randomOpening.UCI.Split(" ");
+            string uciMove = uciMoves[0];
+            Move moveFromUCI = UCItoMove(uciMove);
+            return moveFromUCI;
+        }
+        //if opening found in opening book, play the next move
+        Opening? opening = openings.FirstOrDefault(o => o.UCI.Contains(Game.UCIstring.Trim()));
+        if(opening != null)
+        {
+            string[] uciMoves = opening.UCI.Split(" ");
+            if (Game.Moves.Count < uciMoves.Length)
+            {
+                string uciMove = uciMoves[Game.Moves.Count];
+                Console.WriteLine("From Book "+ opening.Name + " " + uciMove);
+                Move moveFromUCI = UCItoMove(uciMove);
+                Console.WriteLine(moveFromUCI.Source + " " + moveFromUCI.Destination);
+                return moveFromUCI;
+            }
+        }
+
         int depth = 4;
         var MoveList = GenerateMoveList();
         if (MoveList.Count == 0)
