@@ -1,15 +1,61 @@
 ﻿@import url('open-iconic/font/css/open-iconic-bootstrap.min.css');
 
+:root {
+    --background: white;
+    --font-color: black;
+    --highlight: #f7f7f7;
+    --highlight2: #e2e3e5;
+    --link: #0366d6;
+    --sidebar-gradient-top: #3a0647;
+    --sidebar-gradient-bottom: #3a0647;
+    --logo: url("css/assets/Chessnovert-Logo-Light.svg");
+    --warning: #f44560;
+    --square-dark: #5A5447;
+    --square-light: #8F8775;
+}
+
+.dark-mode {
+    --background: #17181C;
+    --font-color: #BABBBB;
+    --highlight: #0A0A0A;
+    --highlight2: #121212;
+    --link: #1E56B1;
+    --sidebar-gradient-top: #111;
+    --sidebar-gradient-bottom: #111;
+    --logo: url("css/assets/Chessnovert-Logo-Dark.svg");
+    --warning: #902838;
+}
+
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    height: 100%;
 }
+
+#app, .page, main {
+    height: 100%;
+}
+
 
 h1:focus {
     outline: none;
 }
 
 a, .btn-link {
-    color: #0071c1;
+    color: var(--link);
+}
+
+.alert-secondary {
+    background-color: var(--highlight2);
+    color: var(--font-color);
+}
+
+.table {
+    color: var(--font-color);
+}
+
+main {
+    background-color: var(--background);
+    color: var(--font-color);
 }
 
 .btn-primary {
@@ -62,3 +108,33 @@ a, .btn-link {
     .blazor-error-boundary::after {
         content: "An error has occurred."
     }
+
+.mirage {
+    --square-dark: #5A5447;
+    --square-light: #8F8775;
+}
+
+.lush {
+    --square-dark: #779755;
+    --square-light: #96B275;
+}
+
+.noir {
+    --square-dark: #13141D;
+    --square-light: #303242;
+}
+
+.wintersun {
+    --square-dark: #91BAB9;
+    --square-light: #CEE0DF;
+}
+
+.arctic {
+    --square-dark: #DADADA;
+    --square-light: #F1F1F1;
+}
+
+.pineapple {
+    --square-dark: #CFC779;
+    --square-light: #E2DFCF;
+}

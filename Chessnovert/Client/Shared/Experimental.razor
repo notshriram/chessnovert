@@ -1,0 +1,1025 @@
+﻿@using Chessnovert.Shared
+@using Chessnovert.Shared.Chess
+@using Chessnovert.Shared.Chess.Enums
+
+<div class="board">
+    @for (int i = 0; i < 8; i++)
+    {
+        int Row = PlayerColor == Color.Black ? i : 7 - i;
+        <div class="rank">
+            @for (int j = 0; j < 8; j++)
+            {
+                int Col = PlayerColor == Color.Black ? j : 7 - j;
+                Piece? piece = board[Row, Col];
+                Coordinate position = new Coordinate { Row = Row, Col = Col };
+
+                bool isLastMove = Game.Moves != null
+                                     && Game.Moves.Count > 0 
+                                     && (Game.Moves[^1].Source == position || Game.Moves[^1].Destination == position);
+                
+
+                bool isValid = false;
+                if (activePiece != null)
+                {
+                    isValid = TryMove(activePiece.Position, position);
+                }
+                
+                <div @onclick="()=>MoveToPosition(position)" class="cell @(isValid?"valid":"") @(isLastMove?"lastmove":"")">
+                    @if (piece != null)
+                    {
+                        <div @onclick="()=>SelectPiece(piece)"
+                 class="piece @piece.Name @piece.Color.ToString() @(piece == activePiece? "active" : "")">
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+
+</div>
+
+@code {
+    public int promotionsCount = 0;
+    public int searchDepth = 1;
+
+    [Parameter]
+    public EventCallback OnChangeHook { get; set; }
+
+    [Parameter]
+    public Chessnovert.Shared.Game Game { get; set; }
+
+    [Parameter]
+    public Color? PlayerColor { get; set; }
+
+    Piece[,] board = new Piece[8, 8];
+    Piece activePiece = null!;
+    Color currentTurn;
+    int validMoves = 0;
+    int HalfMoveClock = 0;
+    int FullMoveCounter = 1;
+    // Castling Rights KQkq
+
+    public string movestring = "";
+    public int movenumber = 0;
+
+    public List<Opening> openings = new();
+    public Stack<Move> MoveStack = new();
+    public Stack<bool[]> CastlingRightsStack = new();
+
+    async Task PrintMovesCount(int depth, bool singlePass)
+    {
+        for (int i = singlePass ? depth : 1; i <= depth; i++)
+        {
+            int count = await MoveGenerationTest(i);
+            Console.WriteLine($"\nNodes searched: {count}");
+        }
+        searchDepth++;
+        Console.WriteLine($"Promotions Count: {promotionsCount}");
+        promotionsCount=0;
+    }
+
+    async Task PlayBot()
+    {
+        await Task.Delay(1000);
+        Move? move = ComputerMove();
+        if(move != null)
+            MakeMove(move);
+        StateHasChanged();
+        await OnChangeHook.InvokeAsync();
+    }
+
+    private async Task readTsv()
+    {
+        HttpClient Http = new HttpClient();
+        Http.BaseAddress = new Uri("https://localhost:7258/");
+        List<string> files = new List<string>() { "a.tsv", "b.tsv", "c.tsv", "d.tsv", "e.tsv" };
+        int rowCount = 0;
+        foreach (string file in files)
+        {
+            string absolutePath = "openings/" + file;
+            Stream? st = await Http.GetStreamAsync(absolutePath);
+            StreamReader reader = new StreamReader(st);
+            string? line = "";
+            while ((line = reader.ReadLine()) != null)
+            {
+                string[] tsv = line.Split(new char[] { '\t' }).ToArray();
+                //remove any end spaces from data
+                tsv = tsv.Select(x => x.Trim()).ToArray();
+
+                if (rowCount == 0)
+                {
+                    foreach (string colName in tsv)
+                    {
+                        Console.WriteLine(colName, typeof(string));
+                    }
+                    rowCount++;
+                }
+                else
+                {
+                    rowCount++;
+                    var ECO = tsv[0];
+                    var Name = tsv[1];
+                    var PGN = tsv[2];
+                    var UCI = tsv[3];
+                    var EPD = tsv[4];
+                    openings.Add(new Opening( ECO, Name, PGN, UCI, EPD));
+                }
+
+            }
+        }
+        Console.WriteLine($"Total Openings {openings.Count}");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await readTsv();
+    }
+
+    private Piece? PieceFromChar(char c, Coordinate position)
+    {
+        switch (c)
+        {
+            case 'P':
+                return new Pawn(Color.White, position);
+            case 'N':
+                return new Knight(Color.White, position);
+            case 'B':
+                return new Bishop(Color.White, position);
+            case 'R':
+                return new Rook(Color.White, position);
+            case 'Q':
+                return new Queen(Color.White, position);
+            case 'K':
+                return new King(Color.White, position);
+            case 'p':
+                return new Pawn(Color.Black, position);
+            case 'n':
+                return new Knight(Color.Black, position);
+            case 'b':
+                return new Bishop(Color.Black, position);
+            case 'r':
+                return new Rook(Color.Black, position);
+            case 'q':
+                return new Queen(Color.Black, position);
+            case 'k':
+                return new King(Color.Black, position);
+            default:
+                return null;
+        }
+    }
+
+    public void PositionFromFEN(string FEN)
+    {
+        string[] fen = FEN.Split(' ');
+        foreach (var i in fen)
+        {
+            Console.WriteLine(i);
+        }
+        string[] rows = fen[0].Split('/');
+        for (int i = 0; i < 8; i++)
+        {
+            int col = 0;
+            for (int j = 0; j < rows[i].Length; j++)
+            {
+                if (rows[i][j] >= '1' && rows[i][j] <= '8')
+                {
+                    col += rows[i][j] - '0';
+                }
+                else
+                {
+                    int r = 7 - i;
+                    int c = 7 - col;
+                    board[r,c] = PieceFromChar(rows[i][j], new Coordinate { Row = r, Col = c })!;
+                    col++;
+                }
+            }
+        }
+        currentTurn = fen[1] == "w" ? Color.White : Color.Black;
+
+        var castlingRights = new bool[4] { false, false, false, false };
+        if (fen[2].Contains('K'))
+            castlingRights[0] = true;
+        if (fen[2].Contains('Q'))
+            castlingRights[1] = true;
+        if (fen[2].Contains('k'))
+            castlingRights[2] = true;
+        if (fen[2].Contains('q'))
+            castlingRights[3] = true;
+        
+        CastlingRightsStack.Push(castlingRights);
+
+        // TODO: en passant
+
+        if(fen.Length > 4 && int.TryParse(fen[4], out int halfMoveClock))
+        {
+            HalfMoveClock = halfMoveClock;
+        }
+        if (fen.Length > 5 && int.TryParse(fen[5], out int fullMoveCounter))
+        {
+            FullMoveCounter = fullMoveCounter;
+        }
+
+        validMoves = CountValidMoves(currentTurn);
+    }
+
+    protected override void OnInitialized()
+    {
+        //Pos 5 verified to depth 4
+        //PositionFromFEN("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8 ");
+
+        //Pos 4 verified to depth 5
+        //PositionFromFEN("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1");
+        
+        //Pos 3 failing depth 5 (shows 20 extra promotions)
+        //PositionFromFEN("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - ");
+    
+        //kiwipete failing at depth 4
+        //PositionFromFEN("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ");
+        
+        //Position 1 verified to depth 4
+        PositionFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - ");
+        base.OnInitialized();
+
+        // Play all the moves that have occured upto this point
+        List<Move> moves = Game.Moves;
+        if (moves.Count != 0)
+        {
+            foreach (var move in moves)
+            {
+                OnMoveEvent(move.Source, move.Destination, Game.TimeControl);
+            }
+        }
+        else
+        {
+            Console.WriteLine("Empty Move List");
+        }
+
+        for (int i = 0; i < 8; i++)
+        {
+            for (int j = 0; j < 8; j++)
+            {
+                if (board[i, j] != null)
+                    Console.Write(board[i, j].Value);
+            }
+            Console.WriteLine();
+        }
+
+    }
+
+    protected async Task PlayComputerMove()
+    {
+            await Task.Delay(100);
+            // play computer move
+            var computerMove = ComputerMove();
+            if (computerMove != null)
+            {
+                MakeMove(computerMove);
+                Game.Moves.Add(computerMove);
+
+                if (Game.UCIstring==null || Game.UCIstring == "")
+                    Game.UCIstring = computerMove.Source.ToString().ToLower() + computerMove.Destination.ToString().ToLower();
+                else
+                    Game.UCIstring += " " + computerMove.Source.ToString().ToLower() + computerMove.Destination.ToString().ToLower();
+                
+                //remove trailing spaces
+                Opening? opening = openings.FirstOrDefault(o => o.UCI == Game.UCIstring.Trim());
+                if (opening != null)
+                {
+                    Game.Opening = opening;
+                    OnChangeHook.InvokeAsync();
+                }
+
+                Console.WriteLine($"It's {currentTurn}'s turn");
+                validMoves = CountValidMoves(currentTurn);
+                if (validMoves == 0)
+                {
+                    Console.WriteLine(Game.UCIstring);
+                    Console.WriteLine("Checkmate");
+                }
+
+            }
+            else
+            {
+                Console.WriteLine("Stalemate");
+            }
+            StateHasChanged();
+    }
+
+    protected void MoveToPosition(Coordinate position)
+    {
+        Console.WriteLine(position);
+        if (activePiece != null)
+        {
+
+            if (TryMove(activePiece.Position, position))
+            {
+                //Console.WriteLine("legal");
+                var source = activePiece.Position;
+                var destination = position;
+
+                var sourcePiece = board[source.Row, source.Col];
+                var destinationPiece = board[destination.Row, destination.Col];
+                if (sourcePiece != null)
+                {
+                    Move move = new Move(activePiece.Position, position, activePiece.Color, board[destination.Row, destination.Col]);
+                    MakeMove(move);
+                    Game.Moves.Add(move);
+                    if (Game.UCIstring==null || Game.UCIstring == "")
+                        Game.UCIstring = move.Source.ToString().ToLower() + move.Destination.ToString().ToLower();
+                    else
+                        Game.UCIstring += " " + move.Source.ToString().ToLower() + move.Destination.ToString().ToLower();
+                    
+                    //remove trailing spaces
+                    Opening? opening = openings.FirstOrDefault(o => o.UCI == Game.UCIstring.Trim());
+                    if (opening != null)
+                    {
+                        Game.Opening = opening;
+                        OnChangeHook.InvokeAsync();
+                    }
+                    activePiece = null!;
+                    Console.WriteLine($"It's {currentTurn}'s turn");
+                    validMoves = CountValidMoves(currentTurn);
+                    if (validMoves == 0)
+                    {
+                        Console.WriteLine("Checkmate");
+                    }
+                    else
+                    {
+                        PlayComputerMove();
+                    }
+                }
+            }
+            else if (position == activePiece.Position)
+            {
+                Console.WriteLine("Selected " + activePiece.Color + activePiece.Name);
+            }
+            else
+            {
+                activePiece = null!;
+                //Console.WriteLine("illegal");
+            }
+        }
+        OnChangeHook.InvokeAsync();
+    }
+    public Move UCItoMove(string uci)
+    {
+        int col = uci[0] - 'a';
+        int row = 8 - (uci[1] - '0');
+        Coordinate source = new Coordinate(7-row, 7-col);
+        col = uci[2] - 'a';
+        row = 8 - (uci[3] - '0');
+        Coordinate destination = new Coordinate(7-row, 7-col);
+        return new Move(source, destination, currentTurn, board[destination.Row, destination.Col]);
+    }
+    public Move? ComputerMove()
+    {
+        // first few moves get from opening book
+        if(Game.Moves.Count == 0)
+        {
+            //choose random opening
+            Random rnd = new Random();
+            int openingIndex = rnd.Next(openings.Count);
+            Opening randomOpening = openings[openingIndex];
+            Console.WriteLine(randomOpening.Name);
+            // Generate first move from opening
+            string[] uciMoves = randomOpening.UCI.Split(" ");
+            string uciMove = uciMoves[0];
+            Move moveFromUCI = UCItoMove(uciMove);
+            return moveFromUCI;
+        }
+        //if opening found in opening book, play the next move
+        Opening? opening = openings.FirstOrDefault(o => o.UCI.StartsWith(Game.UCIstring.Trim()));
+        if(opening != null)
+        {
+            string[] uciMoves = opening.UCI.Split(" ");
+            if (Game.Moves.Count < uciMoves.Length)
+            {
+                string uciMove = uciMoves[Game.Moves.Count];
+                Console.WriteLine("From Book "+ opening.Name + " " + uciMove);
+                Move moveFromUCI = UCItoMove(uciMove);
+                Console.WriteLine(moveFromUCI.Source + " " + moveFromUCI.Destination);
+                return moveFromUCI;
+            }
+        }
+
+        int depth = 4;
+        var MoveList = GenerateMoveList();
+        if (MoveList.Count == 0)
+        {
+            return null;
+        }
+        // find the best move
+        Move? move = null;
+        int bestScore = int.MinValue;
+        foreach (var m in MoveList)
+        {
+            MakeMove(m);
+            searchCount++;
+            int score = -Search(depth-1,-100000,100000);
+            UnmakeMove(m);
+            if (score > bestScore)
+            {
+                Console.WriteLine("Score: " + score + " Move: " + m.Source + " " + m.Destination );
+                bestScore = score;
+                move = m;
+            }
+        }
+        if (move == null)
+        {
+            Console.WriteLine("Computer move is null");
+        }
+        Console.WriteLine("Search Count: " + searchCount);
+        searchCount = 0;
+        return move;
+    }
+
+    protected void OnMoveEvent(Coordinate source, Coordinate destination, TimeSpan remainingTime)
+    {
+        Console.WriteLine("Moved from " + source + " to " + destination);
+        var sourcePiece = board[source.Row, source.Col];
+        if (sourcePiece != null)
+        {
+            activePiece = sourcePiece;
+
+            if (activePiece.IsLegal(destination, board))
+            {
+                if (activePiece.Value == 'K'
+                && (destination.Row == activePiece.Position.Row)
+                && (Math.Abs(destination.Col - activePiece.Position.Col) == 2))
+                {
+                    if (CanCastle(activePiece, destination))
+                    {
+                        var position = destination;
+                        int direction = activePiece.Position.Col > position.Col ? -1 : 1;
+                        Piece? rook = board[activePiece.Position.Row, position.Col + direction];
+                        Coordinate rookDestination = new Coordinate(position.Row, position.Col - direction);
+
+                        board[rook.Position.Row, rook.Position.Col] = null!;
+                        rook.Position = rookDestination;
+                        board[rookDestination.Row, rookDestination.Col] = rook;
+                    }
+                    else return;
+
+                }
+                //Console.WriteLine("legal");
+                board[activePiece.Position.Row, activePiece.Position.Col] = null!;
+                activePiece.Position = destination;
+                board[destination.Row, destination.Col] = activePiece;
+                activePiece = null!;
+            }
+        }
+        currentTurn = currentTurn == Color.White ? Color.Black : Color.White;
+        Console.WriteLine($"It's {currentTurn}'s turn");
+        validMoves = CountValidMoves(currentTurn);
+        if (validMoves == 0)
+        {
+            Console.WriteLine("Game Over");
+        }
+        StateHasChanged();
+    }
+
+    protected void SelectPiece(Piece piece)
+    {
+        if (currentTurn != piece.Color)
+        {
+            return;
+        }
+        activePiece = piece;
+    }
+
+    protected bool IsKingInCheck(Color color)
+    {
+        Piece? king = null;
+        for (int i = 0; i < 8; i++)
+        {
+            for (int j = 0; j < 8; j++)
+            {
+                if (board[i, j] != null && board[i, j].Value == 'K')
+                {
+                    if (board[i, j].Color == color)
+                    {
+                        king = board[i, j];
+                    }
+                }
+            }
+        }
+        // WTF
+        if (king == null)
+        {
+            throw new NullReferenceException($"No {color} King Found");
+        }
+
+        for (int i = 0; i < 8; i++)
+        {
+            for (int j = 0; j < 8; j++)
+            {
+                Piece? currentPiece = board[i, j];
+                if (currentPiece != null)
+                {
+                    if (currentPiece.IsLegal(king.Position, board))
+                    {
+                        //Console.WriteLine($"{currentPiece.Color} {currentPiece.Name} can capture {color} King");
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private bool IsCastling(Move move)
+    {
+        if (move.IsCastling) return true;
+        Piece? sourcePiece = board[move.Source.Row, move.Source.Col];
+        if (sourcePiece == null) return false;
+        return (sourcePiece.Value == 'K' && (move.Destination.Row == move.Source.Row) && (Math.Abs(move.Destination.Col - move.Source.Col) == 2));
+    }
+    private bool IsEnPassant(Move move)
+    {
+        if (move.IsEnPassant) return true;
+        Piece? sourcePiece = board[move.Source.Row, move.Source.Col];
+        Piece? destinationPiece = board[move.Destination.Row, move.Destination.Col];
+        if (sourcePiece == null) return false;
+
+        return (sourcePiece.Value == 'P' && Math.Abs(move.Source.Col - move.Destination.Col) == 1 && destinationPiece == null);
+    }
+    private bool CanEnPassant(Move move)
+    {
+        if (move.IsEnPassant) return true;
+        Piece? sourcePiece = board[move.Source.Row, move.Source.Col];
+        if (sourcePiece == null) return false;
+        if (sourcePiece.Value != 'P') return false;
+        // conditions for en passant
+        // 1. last move was a pawn move of two spaces
+        // 2. pawn is moving diagonally
+        // 3. destination is empty
+        // 4. source piece is a pawn
+        if (MoveStack.Count != 0)
+        {
+            Move last = MoveStack.Peek();
+            if (last.Destination.Row == move.Source.Row)
+            {
+                Piece? lastMovedPiece = board[last.Destination.Row, last.Destination.Col];
+                if (lastMovedPiece != null && board[move.Destination.Row, move.Destination.Col] == null)
+                {
+                    if(lastMovedPiece.Value == 'P' && (Math.Abs(last.Source.Row - last.Destination.Row) == 2))
+                    {
+                        return lastMovedPiece.Position.Col == move.Destination.Col;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    protected bool TryMove(Coordinate source, Coordinate destination)
+    {
+        Piece? sourcePiece = board[source.Row, source.Col];
+        Piece? destinationPiece = board[destination.Row, destination.Col];
+        bool isIllegal = true;
+        if (sourcePiece != null)
+        {
+            if (sourcePiece.IsLegal(destination, board))
+            {
+                //Console.WriteLine($"{sourcePiece.Name} is Pseudo Legal from {sourcePiece.Position} to {destination}");
+                
+                Move move = new Move(source, destination, currentTurn, destinationPiece);
+
+                if (IsEnPassant(move))
+                {
+                    if(!CanEnPassant(move)) return false;
+                }
+
+                if (IsCastling(move))
+                    return CanCastle(sourcePiece, destination);
+
+                MakeMove(move);
+
+                if (!IsKingInCheck(sourcePiece.Color))
+                {
+                    isIllegal = false;
+                }
+
+                UnmakeMove(move);
+            }
+        }
+        return !isIllegal;
+    }
+
+    protected bool CanCastle(Piece king, Coordinate destination)
+    {
+
+        if (king.Value != 'K')
+        {
+            return false;
+        }
+        if (king.Position.Row != destination.Row)
+        {
+            return false;
+        }
+        if (IsKingInCheck(king.Color))
+        {
+            return false;
+        }
+        // check castling rights
+        if (king.Color == Color.White)
+        {
+
+            if (destination.Col == 1)
+            {
+                if (!CastlingRightsStack.Peek()[0])
+                {
+                    return false;
+                }
+            }
+            else if (destination.Col == 5)
+            {
+                if (!CastlingRightsStack.Peek()[1])
+                {
+                    return false;
+                }
+            }
+        }
+        else
+        {
+            if (destination.Col == 1)
+            {
+                if (!CastlingRightsStack.Peek()[2])
+                {
+                    return false;
+                }
+            }
+            else if (destination.Col == 5)
+            {
+                if (!CastlingRightsStack.Peek()[3])
+                {
+                    return false;
+                }
+            }
+
+        }
+
+        int direction = king.Position.Col > destination.Col ? -1 : 1;
+
+        for (int i = king.Position.Col + direction; i != destination.Col; i += direction)
+            if (!TryMove(king.Position, new Coordinate(destination.Row, i)))
+                return false;
+
+        bool isIllegal = true;
+
+        Move move = new Move(king.Position, destination, king.Color, null);
+        MakeMove(move);
+
+        if (!IsKingInCheck(king.Color))
+        {
+            isIllegal = false;
+        }
+
+        UnmakeMove(move);
+        return !isIllegal;
+    }
+
+    public int CountValidMoves(Color color)
+    {
+        int count = 0;
+        for (int i = 0; i < 8; i++)
+            for (int j = 0; j < 8; j++)
+            {
+                Coordinate source = new Coordinate(i, j);
+                if (board[i, j] != null && board[i, j].Color == color)
+                {
+                    for (int r = 0; r < 8; r++)
+                        for (int c = 0; c < 8; c++)
+                        {
+                            Coordinate destination = new Coordinate(r, c);
+                            if (TryMove(source, destination)) count++;
+                        }
+                }
+            }
+        return count;
+    }
+
+    public List<Move> GenerateMoveList()
+    {
+        List<Move> MoveList = new();
+        for (int i = 0; i < 8; i++)
+            for (int j = 0; j < 8; j++)
+            {
+                Coordinate source = new Coordinate(i, j);
+                if (board[i, j] != null && board[i, j].Color == currentTurn)
+                {
+                    for (int r = 0; r < 8; r++)
+                        for (int c = 0; c < 8; c++)
+                        {
+                            Coordinate destination = new Coordinate(r, c);
+                            if (TryMove(source, destination))
+                            {
+                                //check for promotion
+                                if (board[i, j].Value == 'P' && (destination.Row == 0 || destination.Row == 7))
+                                {   
+                                    promotionsCount+=4;
+                                    MoveList.Add(new Move(source, destination, board[i, j].Color, board[r, c], new Queen(board[i,j].Color, destination)));
+                                    MoveList.Add(new Move(source, destination, board[i, j].Color, board[r, c], new Rook(board[i, j].Color, destination)));
+                                    MoveList.Add(new Move(source, destination, board[i, j].Color, board[r, c], new Bishop(board[i, j].Color, destination)));
+                                    MoveList.Add(new Move(source, destination, board[i, j].Color, board[r, c], new Knight(board[i, j].Color, destination)));
+                                }
+                                else
+                                    MoveList.Add(new Move(source, destination, board[i, j].Color, board[r, c]));
+                            }
+                        }
+                }
+            }
+        
+        // order moves
+        return MoveList;
+    }
+
+    public async Task<int> MoveGenerationTest(int depth)
+    {
+        if (depth == 0)
+        {
+            return 1;
+        }
+        List<Move> moves = GenerateMoveList();
+        int count = 0;
+        foreach (var move in moves)
+        {
+            MakeMove(move);
+
+            //movenumber++;
+            //movestring = $"{source} {destination}";
+
+            //StateHasChanged();
+            //await Task.Delay(150);
+
+            int localCount = await MoveGenerationTest(depth - 1);
+            count += localCount;
+
+            // function perft(k)
+            if(depth==searchDepth)
+                Console.WriteLine($"{(move.Source.ToString() + move.Destination.ToString()).ToLower()}: {localCount}");
+
+            // unmake move
+            UnmakeMove(move);
+
+            //StateHasChanged();
+            //await Task.Delay(150);
+
+        }
+        return count;
+    }
+    public bool IsPromotion(Move move)
+    {
+        if(move.Promoted != null)
+            return true;
+        if(board[move.Source.Row, move.Source.Col].Value == 'P' && (move.Destination.Row == 0 || move.Destination.Row == 7))
+        {
+            // TODO: Add Modal Dialog to select piece to promote to.
+            if(move.Promoted is null){
+                move.Promoted = new Rook(move.Color, move.Destination);
+            }
+            //move.Promoted = new Queen(move.Color, move.Destination);
+            return true;
+        }
+        return false;
+    }
+
+    public void MakeMove(Move move)
+    {
+        Piece? sourcePiece = board[move.Source.Row, move.Source.Col];
+        //Console.WriteLine($"Making move {sourcePiece.Name}{move.Source}{move.Destination}");
+        // en passant
+        if (IsEnPassant(move))
+        {
+            move.IsEnPassant = true;
+            int direction = move.Color == Color.White ? 1 : -1;
+            Piece? capturedPiece = board[move.Destination.Row - direction, move.Destination.Col];
+            board[capturedPiece!.Position.Row, capturedPiece.Position.Col] = null!;
+            move.Displaced = capturedPiece;
+        }
+        // castling
+        if (IsCastling(move))
+        {
+            move.IsCastling = true;
+            int direction = sourcePiece.Position.Col > move.Destination.Col ? -1 : 1;
+
+            // cannot be dest col + direction for queenside rook
+            Piece? rook = board[sourcePiece.Position.Row, move.Destination.Col + direction];
+            if (direction == 1)
+            {
+                rook = board[sourcePiece.Position.Row, 7];
+            }
+
+            Coordinate rookDestination = new Coordinate(sourcePiece.Position.Row, move.Destination.Col - direction);
+
+            board[rook.Position.Row, rook.Position.Col] = null!;
+            rook.Position = rookDestination;
+            board[rookDestination.Row, rookDestination.Col] = rook;
+            //Console.WriteLine($"Rook Castle destination {rookDestination}");
+        }
+
+        // promotion
+        if(IsPromotion(move))
+        {
+            sourcePiece = move.Promoted!;
+            //Console.WriteLine($"Promotion {move.Promoted!.Name}");
+        }
+
+        //make move
+        board[move.Source.Row, move.Source.Col] = null!;
+        sourcePiece.Position = move.Destination;
+        board[move.Destination.Row, move.Destination.Col] = sourcePiece;
+
+        MoveStack.Push(move);
+
+        //set castling rights
+        bool[] castlingRights = CastlingRightsStack.Peek().ToArray();
+        if (sourcePiece.Value == 'K')
+        {
+            if (sourcePiece.Color == Color.White)
+            {
+                castlingRights[0] = false;
+                castlingRights[1] = false;
+            }
+            else
+            {
+                castlingRights[2] = false;
+                castlingRights[3] = false;
+            }
+        }
+        else if (sourcePiece.Value == 'R')
+        {
+            if (sourcePiece.Color == Color.White)
+            {
+                if (sourcePiece.Position.Col == 0)
+                    castlingRights[0] = false;
+                else if (sourcePiece.Position.Col == 7)
+                    castlingRights[1] = false;
+            }
+            else
+            {
+                if (sourcePiece.Position.Col == 0)
+                    castlingRights[2] = false;
+                else if (sourcePiece.Position.Col == 7)
+                    castlingRights[3] = false;
+            }
+        }
+        CastlingRightsStack.Push(castlingRights);
+        currentTurn = currentTurn == Color.White ? Color.Black : Color.White;
+
+    }
+
+    public void UnmakeMove(Move move)
+    {
+        // unmake move
+        Piece? sourcePiece = board[move.Destination.Row, move.Destination.Col];
+
+        if(sourcePiece == null)
+        {
+            Console.WriteLine($"Error while unmoving {move.Source}{move.Destination} with isCastling {move.IsCastling} and captured = {move.Displaced!=null}");
+            Console.WriteLine($"Null sourcepiece on {move.Destination}");
+            throw new Exception();
+        }
+
+        //Console.WriteLine($"Unmaking move {sourcePiece.Name}{move.Source}{move.Destination}");
+
+        // en passant
+        if (move.IsEnPassant)
+        {
+            //Console.WriteLine($"Unmaking en passant {move.Source}{move.Destination} with captured = {move.Displaced!}");
+            Piece? capturedPiece = move.Displaced;
+            board[capturedPiece!.Position.Row, capturedPiece.Position.Col] = capturedPiece;
+            move.Displaced = null;
+        }
+
+        // castling
+        if (IsCastling(move))
+        {
+            int direction = move.Source.Col > move.Destination.Col ? -1 : 1;
+            Piece? rook = board[sourcePiece.Position.Row, move.Destination.Col - direction];
+
+            Coordinate rookDestination = new Coordinate(move.Source.Row, move.Destination.Col + direction);
+            if (direction == 1)
+            { 
+                rookDestination = new Coordinate(move.Source.Row, 7);
+            }
+            board[rook.Position.Row, rook.Position.Col] = null!;
+            rook.Position = rookDestination;
+            board[rookDestination.Row, rookDestination.Col] = rook;
+            //Console.WriteLine($"Rook Uncastle destination {rookDestination}");
+        }
+
+        // promotion
+        if (move.Promoted is not null)
+        {
+            board[move.Destination.Row, move.Destination.Col] = null!;
+            sourcePiece = new Pawn(move.Color, move.Source);
+        }
+
+        board[move.Destination.Row, move.Destination.Col] = move.Displaced!;
+        sourcePiece.Position = move.Source;
+        board[move.Source.Row, move.Source.Col] = sourcePiece;
+
+        MoveStack.Pop();
+        CastlingRightsStack.Pop();
+        currentTurn = currentTurn == Color.White ? Color.Black : Color.White;
+    }
+
+    public int Evaluate()
+    {
+        int score = 0;
+        for (int row = 0; row < 8; row++)
+        {
+            for (int col = 0; col < 8; col++)
+            {
+                Piece? piece = board[row, col];
+                if (piece != null)
+                {
+                    Color color = currentTurn;
+                    if (piece.Color == color)
+                    {
+                        score += piece.Weight;
+                    }
+                    else
+                    {
+                        score -= piece.Weight;
+                    }
+                }
+            }
+        }
+        return score;
+    }
+
+    public int Search(int depth)
+    {
+        if (depth == 0)
+        {
+            return Evaluate();
+        }
+
+        List<Move> moves = GenerateMoveList();
+        if (moves.Count == 0)
+        {
+            if (IsKingInCheck(currentTurn))
+            {
+                return int.MinValue;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+        int best = int.MinValue;
+        foreach (Move move in moves)
+        {
+            MakeMove(move);
+            int score = -Search(depth - 1);
+            UnmakeMove(move);
+            if (score > best)
+            {
+                best = score;
+            }
+        }
+        return best;
+    }
+
+    public int searchCount = 0;
+    public int Search(int depth, int alpha, int beta)
+    {
+        if (depth == 0)
+        {
+            return Evaluate();
+        }
+
+        List<Move> moves = GenerateMoveList();
+        if (moves.Count == 0)
+        {
+            if (IsKingInCheck(currentTurn))
+            {
+                return -1000000;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+        foreach (Move move in moves)
+        {
+            MakeMove(move);
+            searchCount++;
+            int score = -Search(depth - 1, -beta, -alpha);
+            UnmakeMove(move);
+            if (score >= beta)
+            {
+                return beta;
+            }
+            if (score > alpha)
+            {
+                alpha = score;
+            }
+        }
+        return alpha;
+    }
+
+}

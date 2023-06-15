@@ -1,0 +1,18 @@
+﻿
+<div class="clock @highlight()">
+    @Time.ToString(@"hh\:mm\:ss")
+</div>
+
+
+@code {
+    [Parameter]
+    public TimeSpan Time { get; set; } = TimeSpan.Zero;
+    protected string highlight()
+    {
+        if (Time < TimeSpan.FromSeconds(20))
+        {
+            return "agitated";
+        }
+        return String.Empty;
+    }
+}

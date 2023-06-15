@@ -1,0 +1,211 @@
+﻿@page "/game/{GameId:guid}"
+@using Chessnovert.Shared
+@using Chessnovert.Shared.Chess.Enums
+@using Microsoft.AspNetCore.SignalR.Client
+
+@if (found != null)
+{
+    if (found == true && game != null)
+    {
+        <div id="board-container">
+            <div id="board">
+                <Board HubConnection="hubConnection"
+                       Game="@game"
+                       PlayerColor="@playerColor"
+                       OnMoveCompleted="SynchronizeClocks"
+                       OnGameOver="OnGameOver" />
+            </div>
+            <div id="black-infobar" class="@GetInfobarCssClass(Color.Black)" >
+                <PlayerInfoBar Time="@remainingTimeBlack"/>
+            </div>
+            <div id="game-info-panel" class="px-2"> 
+                @if(game.Opening!=null)
+                {
+                    <div class="text-sm-start">
+                        @game.Opening.ECO : @game.Opening.Name
+                    </div>
+                }
+                else
+                {
+                    <div>
+                    </div>
+                }
+                <table class="table table-borderless table-hover">
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">White</th>
+                            <th scope="col">Black</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for(int i=0;i<game.Moves.Count;i+=2)
+                        {
+                            <tr>
+                                @if(i+1==game.Moves.Count)
+                                {
+                                    <th scope="row">@(1 + @i / 2)</th>
+                                    <td colspan="2">@game.Moves[i].Source @game.Moves[i].Destination</td>
+                                }
+                                else
+                                {
+                                    <th scope="row">@(1 + @i/2)</th>
+                                    <td>@game.Moves[i].Source @game.Moves[i].Destination</td>
+                                    <td>@game.Moves[i+1].Source @game.Moves[i+1].Destination</td>
+                                }
+                            </tr>
+                            
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div id="white-infobar" class="@GetInfobarCssClass(Color.White)">
+                <PlayerInfoBar Time="@remainingTimeWhite" />
+            </div>
+        </div>
+    }
+    else
+    {
+        <p role="alert">Sorry, there's nothing at this address.</p>
+    }
+}
+else
+{
+    <p>Loading</p>
+}
+
+@code {
+
+    [Parameter]
+    public Guid GameId { get; set; }
+    HubConnection hubConnection = new HubConnectionBuilder().WithUrl("https://tl222.local:5001/connect").Build();
+    HttpClient httpClient = new();
+    bool? found;
+    public Chessnovert.Shared.Game? game;
+    Color? playerColor;
+    Color currentlyMoving = Color.White;
+    TimeSpan remainingTimeBlack, remainingTimeWhite;
+    private Task? _clockTask;
+    private readonly PeriodicTimer _timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1000));
+    private readonly CancellationTokenSource _cts = new();
+    string? result = null;
+
+    protected string GetInfobarCssClass(Color color)
+    {
+        if (color == playerColor)
+        {
+            return "bottom-infobar";
+        }
+        else return "top-infobar";
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            game = await httpClient.GetFromJsonAsync<Chessnovert.Shared.Game>($"https://tl222.local:5001/api/Games/{GameId}");
+            if (game != null)
+            {
+                if (game.PlayerWhite == Guid.Empty)
+                {
+                    // Join as Player White
+                    playerColor = Color.White;
+                }
+                else if (game.PlayerBlack == Guid.Empty)
+                {
+                    // Join as Player Black
+                    playerColor = Color.Black;
+                }
+                else
+                {
+                    // Join as Spectator
+                    playerColor = null;
+                }
+                Console.WriteLine(playerColor);
+                foreach (var move in game.Moves)
+                {
+                    Console.WriteLine("Previously.. " + move.Source + " " + move.Destination);
+                }
+                await JoinGame();
+                found = true;
+                remainingTimeBlack = remainingTimeWhite = game.TimeControl;
+            }
+        }
+        catch(Exception e)
+        {
+            Console.WriteLine("Request failed " + e.Message);
+            found = false;
+        }
+    }
+    async Task JoinGame()
+    {
+        await hubConnection.StartAsync();
+        await hubConnection.SendAsync("JoinGame", GameId);
+    }
+
+    protected void StartClocks()
+    {
+        _clockTask = UpdateClocksAsync();
+    }
+
+    protected void SynchronizeClocks(TimeSpan remainingTime)
+    {
+        if (_clockTask == null)
+        {
+            StartClocks();
+        }
+        if (currentlyMoving == Color.White)
+        {
+            remainingTimeWhite = remainingTime;
+            currentlyMoving = Color.Black;
+        }
+        else if (currentlyMoving == Color.Black)
+        {
+            remainingTimeBlack = remainingTime;
+            currentlyMoving = Color.White;
+        }
+    }
+
+    private async Task UpdateClocksAsync()
+    {
+        try
+        {
+            while (await _timer.WaitForNextTickAsync(_cts.Token))
+            {
+                if (currentlyMoving == Color.White)
+                {
+                    remainingTimeWhite -= TimeSpan.FromMilliseconds(1000);
+                    StateHasChanged();
+                }
+                else if (currentlyMoving == Color.Black)
+                {
+                    remainingTimeBlack -= TimeSpan.FromMilliseconds(1000);
+                    StateHasChanged();
+                }
+            }
+        }
+        catch (OperationCanceledException e)
+        {
+            Console.WriteLine("UpdateClocksAsync Exception: " + e.Message);
+        }
+    }
+
+    public async Task StopClocksAsync()
+    {
+        if (_clockTask is null)
+        {
+            return;
+        }
+        _cts.Cancel();
+        await _clockTask;
+        _cts.Dispose();
+        Console.WriteLine("Cancelled");
+    }
+
+    public async Task OnGameOver(string message)
+    {
+        await StopClocksAsync();
+        Console.WriteLine(message);
+        StateHasChanged();
+    }
+}

@@ -7,8 +7,20 @@
     background-color: rgba(0,0,0,0.4);
 }
 
-.navbar-brand {
-    font-size: 1.1rem;
+
+.h-full{
+    height:100%;
+}
+.w-full {
+    width:100%;
+}
+.navbar-logo {
+    z-index:10;
+    background-image: url("css/assets/Chessnovert-Logo-Dark.svg");
+    background-repeat:no-repeat;
+    background-size:contain;
+    height:100%;
+    aspect-ratio: 10/3;
 }
 
 .oi {
@@ -44,6 +56,10 @@
     background-color: rgba(255,255,255,0.25);
     color: white;
 }
+.container-fluid{
+    max-height:100%;
+    width:auto;
+}
 
 .nav-item ::deep a:hover {
     background-color: rgba(255,255,255,0.1);
@@ -60,3 +76,5 @@
         display: block;
     }
 }
+
+

@@ -8,8 +8,27 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="wwwroot\css\assets\kosal\black_bishop.svg" />
+    <Content Remove="wwwroot\css\assets\kosal\black_king.svg" />
+    <Content Remove="wwwroot\css\assets\kosal\black_knight.svg" />
+    <Content Remove="wwwroot\css\assets\kosal\black_pawn.svg" />
+    <Content Remove="wwwroot\css\assets\kosal\black_queen.svg" />
+    <Content Remove="wwwroot\css\assets\kosal\black_rook.svg" />
+    <Content Remove="wwwroot\css\assets\kosal\kosal_preview.png" />
+    <Content Remove="wwwroot\css\assets\kosal\LICENSE.txt" />
+    <Content Remove="wwwroot\css\assets\kosal\README.md" />
+    <Content Remove="wwwroot\css\assets\kosal\white_bishop.svg" />
+    <Content Remove="wwwroot\css\assets\kosal\white_king.svg" />
+    <Content Remove="wwwroot\css\assets\kosal\white_knight.svg" />
+    <Content Remove="wwwroot\css\assets\kosal\white_pawn.svg" />
+    <Content Remove="wwwroot\css\assets\kosal\white_queen.svg" />
+    <Content Remove="wwwroot\css\assets\kosal\white_rook.svg" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.10" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="7.0.0" />
     <PackageReference Include="Microsoft.Authentication.WebAssembly.Msal" Version="6.0.10" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="6.0.0" />
   </ItemGroup>
@@ -20,6 +39,24 @@
 
   <ItemGroup>
     <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\css\assets\kosal\black_bishop.svg" />
+    <None Include="wwwroot\css\assets\kosal\black_king.svg" />
+    <None Include="wwwroot\css\assets\kosal\black_knight.svg" />
+    <None Include="wwwroot\css\assets\kosal\black_pawn.svg" />
+    <None Include="wwwroot\css\assets\kosal\black_queen.svg" />
+    <None Include="wwwroot\css\assets\kosal\black_rook.svg" />
+    <None Include="wwwroot\css\assets\kosal\kosal_preview.png" />
+    <None Include="wwwroot\css\assets\kosal\LICENSE.txt" />
+    <None Include="wwwroot\css\assets\kosal\README.md" />
+    <None Include="wwwroot\css\assets\kosal\white_bishop.svg" />
+    <None Include="wwwroot\css\assets\kosal\white_king.svg" />
+    <None Include="wwwroot\css\assets\kosal\white_knight.svg" />
+    <None Include="wwwroot\css\assets\kosal\white_pawn.svg" />
+    <None Include="wwwroot\css\assets\kosal\white_queen.svg" />
+    <None Include="wwwroot\css\assets\kosal\white_rook.svg" />
   </ItemGroup>
 
 </Project>

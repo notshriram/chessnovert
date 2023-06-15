@@ -25,6 +25,20 @@
     <script src="_content/Microsoft.Authentication.WebAssembly.Msal/AuthenticationService.js"></script>
     <script src="_framework/blazor.webassembly.js"></script>
     <script>navigator.serviceWorker.register('service-worker.js');</script>
+    <script>
+        window.addToLocalStorage=(key, value)=> { localStorage[key] = value; }
+        window.getFromLocalStorage = (key) => { return localStorage[key]; }
+        window.prefersDarkTheme = () => {
+            return window.matchMedia("(prefers-color-scheme: dark)").matches;
+        }
+        window.onSystemThemeChange = (dotNetRef) =>
+        {
+            console.log("Start Event Listener");
+            window.matchMedia("(prefers-color-scheme: dark)").addListener(
+                e => dotNetRef.invokeMethodAsync("OnSystemThemeChange", e.matches)
+            );
+        }
+    </script>
 </body>
 
 </html>

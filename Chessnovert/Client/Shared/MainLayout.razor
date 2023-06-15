@@ -1,14 +1,22 @@
 ﻿@inherits LayoutComponentBase
+@inject IJSRuntime js;
 
-<div class="page">
+<div class="page @getThemeClass() @boardTheme">
     <div class="sidebar">
         <NavMenu />
     </div>
 
     <main>
         <div class="top-row px-4 auth">
+            <button class="theme-switcher oi @getIconClass()" @onclick="changeTheme">
+            </button>
             <LoginDisplay />
-            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
+            <select style="margin-left: 1rem" class="dropdown dropdown-toggle" @onchange="changeBoardTheme">
+                @foreach(var theme in boardThemes)
+                {
+                    <option class="dropdown-item" selected="@(@theme==@boardTheme)" value="@theme" >@theme</option>
+                }
+            </select>
         </div>
 
         <article class="content px-4">
@@ -16,3 +24,86 @@
         </article>
     </main>
 </div>
+
+@code {
+    private string selectedTheme = "Light";
+    private string boardTheme = "lush";
+    private List<string> boardThemes = new List<string> { "mirage", "lush", "noir", "wintersun", "arctic" , "pineapple" };
+    private DotNetObjectReference<MainLayout>? objRef;
+
+    [JSInvokable]
+    public async Task OnSystemThemeChange(bool isDarkMode)
+    {
+        if(isDarkMode)
+        {
+            selectedTheme = "Dark";
+        }
+        else 
+        {
+            selectedTheme = "Light";
+        }
+        StateHasChanged();
+        await js.InvokeVoidAsync("addToLocalStorage", "theme", selectedTheme);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Start event listener in index.html
+        objRef = DotNetObjectReference.Create(this);
+        await TriggerDotNetInstanceMethod();
+
+        // Set Theme According to Saved theme or System Preference
+        var savedTheme = await js.InvokeAsync<string>("getFromLocalStorage", "theme");
+        var systemPrefersDark = await js.InvokeAsync<bool>("prefersDarkTheme");
+        if(!string.IsNullOrEmpty(savedTheme))
+        {
+            selectedTheme = savedTheme;
+        }
+        else if (systemPrefersDark)
+        {
+            selectedTheme = "Dark";
+        }
+    }
+
+    // Add System Theme Event Listener
+    public async Task TriggerDotNetInstanceMethod()
+    {
+        await js.InvokeAsync<string>("onSystemThemeChange", objRef);
+    }
+
+    private bool IsSelected(string option)
+    {
+        return option == selectedTheme;
+    }
+
+    private string getThemeClass()
+    {
+        switch(selectedTheme)
+        {
+            case "Light": return String.Empty;
+            case "Dark" : return "dark-mode";
+            default: return String.Empty;
+        }
+    }
+
+    private string getIconClass()
+    {
+        switch (selectedTheme)
+        {
+            case "Light": return "oi-moon";
+            case "Dark": return "oi-sun";
+            default: return String.Empty;
+        }
+    }
+
+    private async Task changeTheme()
+    {
+        selectedTheme = IsSelected("Light") ? "Dark" : "Light";
+        await js.InvokeVoidAsync("addToLocalStorage", "theme", selectedTheme);
+    }
+
+    private void changeBoardTheme(ChangeEventArgs e)
+    {
+        boardTheme = e.Value.ToString();
+    }
+}
